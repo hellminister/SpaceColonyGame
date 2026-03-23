@@ -1,0 +1,2 @@
+NAME Lalande 21185
+DESCRIPTION A temporary description for Lalande 21185

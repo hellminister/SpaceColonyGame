@@ -1,0 +1,2 @@
+NAME Groombridge 1618
+DESCRIPTION A temporary description for Groombridge 1618

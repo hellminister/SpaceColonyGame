@@ -1,0 +1,2 @@
+NAME Wolf 359
+DESCRIPTION A temporary description for Wolf 359

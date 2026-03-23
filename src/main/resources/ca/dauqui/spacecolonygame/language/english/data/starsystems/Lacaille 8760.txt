@@ -1,0 +1,2 @@
+NAME Lacaille 8760
+DESCRIPTION A temporary description for Lacaille 8760

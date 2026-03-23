@@ -1,0 +1,2 @@
+NAME DX Cancri
+DESCRIPTION A temporary description for DX Cancri

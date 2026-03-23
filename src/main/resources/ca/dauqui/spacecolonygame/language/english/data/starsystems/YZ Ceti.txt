@@ -1,0 +1,2 @@
+NAME YZ Ceti
+DESCRIPTION A temporary description for YZ Ceti

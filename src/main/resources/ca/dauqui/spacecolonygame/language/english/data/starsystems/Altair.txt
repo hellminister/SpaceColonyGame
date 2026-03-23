@@ -1,0 +1,2 @@
+NAME Altair
+DESCRIPTION A temporary description for Altair

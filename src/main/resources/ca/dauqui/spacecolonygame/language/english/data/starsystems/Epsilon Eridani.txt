@@ -1,0 +1,2 @@
+NAME Epsilon Eridani
+DESCRIPTION A temporary description for Epsilon Eridani

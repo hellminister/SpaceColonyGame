@@ -1,0 +1,2 @@
+NAME EI Cancri B
+DESCRIPTION A temporary description for EI Cancri B

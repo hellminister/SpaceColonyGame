@@ -1,0 +1,2 @@
+NAME Teegarden's star
+DESCRIPTION A temporary description for Teegarden's star

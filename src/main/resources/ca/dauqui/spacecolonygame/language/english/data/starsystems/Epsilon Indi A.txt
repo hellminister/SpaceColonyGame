@@ -1,0 +1,2 @@
+NAME Epsilon Indi A
+DESCRIPTION A temporary description for Epsilon Indi A

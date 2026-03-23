@@ -1,0 +1,2 @@
+NAME Omicron2 Eridani C
+DESCRIPTION A temporary description for Omicron2 Eridani C

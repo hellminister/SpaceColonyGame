@@ -1,0 +1,2 @@
+NAME Barnard's star
+DESCRIPTION A temporary description for Barnard's star

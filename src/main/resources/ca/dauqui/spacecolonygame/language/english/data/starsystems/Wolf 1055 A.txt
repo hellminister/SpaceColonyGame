@@ -1,0 +1,2 @@
+NAME Wolf 1055 A
+DESCRIPTION A temporary description for Wolf 1055 A
