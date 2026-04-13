@@ -23,7 +23,7 @@ public class LocalisationTextStarGenerator {
 
     private static final String STAR_LOCALISATION_PATH = "src/main/resources/ca/dauqui/spacecolonygame/language/english/data/starsystems/";
     private static final String STAR_DATA_PATH = "src/main/resources/ca/dauqui/spacecolonygame/data/starsystems/";
-    private static final  double MAX_DISTANCE = 20.0;
+    private static final  double MAX_DISTANCE = 25.0;
 
 
     static void main() {

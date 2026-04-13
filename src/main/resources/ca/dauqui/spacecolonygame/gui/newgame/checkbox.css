@@ -1,0 +1,18 @@
+.check-box .box {
+
+    -fx-background-color: black;
+    -fx-border-color:lime;
+    -fx-border-radius:1px;
+
+}
+
+.check-box:selected .mark {
+
+    -fx-background-color: lime;
+
+}
+
+.check-box:disabled .box {
+
+    -fx-background-color: grey;
+}

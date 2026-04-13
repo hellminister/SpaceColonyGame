@@ -8,13 +8,4 @@ AI_LABEL By what name do you wish me to be known?
 AI_NEXT Next
 AI_BACK Back
 AI_DEFAULT_NAME Adviser
-STAR_LIST_LABEL Star Selection
-LAUNCH_PROBE_BUTTON Launch Probes
-PROBES_LEFT Probes Available:
-DESCRIPTION Description
-SPECTRAL_LABEL Spectral Class:
-DISTANCE_LABEL Distance:
-MAIN_SHIP_TRAVEL_LABEL Seed Ship Travel Time:
-MASS_LABEL Mass:
-HUMANITY_TRAVEL_LABEL Humanity Travel Time:
-HUMANITY_TRANSIT_SURVIVAL_LABEL Humanity Survival Probability:
+TAKEOFF_NEXT Skip

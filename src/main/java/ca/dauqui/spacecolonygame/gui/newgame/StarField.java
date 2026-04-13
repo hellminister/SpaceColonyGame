@@ -1,8 +1,6 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
-import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystemAsset;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
-import ca.dauqui.spacecolonygame.gui.startscreen.StartScreen;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
@@ -55,7 +53,6 @@ public class StarField extends BorderPane {
         clip.heightProperty().bind(heightProperty().subtract(hBox.heightProperty()));
         root.setClip(clip);
 
-
         setCenter(root);
 
         hBox.setSpacing(10);
@@ -76,8 +73,6 @@ public class StarField extends BorderPane {
         DoubleProperty bet = new SimpleDoubleProperty(0);
         DoubleProperty gam = new SimpleDoubleProperty(0);
 
-
-
         Button x1 = matrixRotateNodeButton( ()-> {
             alf.set(alf.get()+ ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
@@ -87,7 +82,6 @@ public class StarField extends BorderPane {
             alf.set(alf.get() - ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
         }, Target.ROLL_MINUS.localizedProperty());
-
 
         Button y1 = matrixRotateNodeButton( () -> {
             bet.set(bet.get() + ANGLE_CHANGE);
@@ -106,9 +100,6 @@ public class StarField extends BorderPane {
             gam.set(gam.get() - ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
         }, Target.YAW_MINUS.localizedProperty());
-
-
-
 
         hBox.getChildren().addAll(x1, x2, y1, y2, z1, z2);
 

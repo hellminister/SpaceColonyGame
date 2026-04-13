@@ -1,0 +1,2 @@
+NAME EQ Pegasi B
+DESCRIPTION A temporary description for EQ Pegasi B

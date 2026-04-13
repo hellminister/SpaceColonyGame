@@ -1,14 +1,9 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystemAsset;
-import ca.dauqui.spacecolonygame.gui.common.Utility;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
+import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -21,12 +16,15 @@ public class StarList extends StackPane {
     private final ObjectProperty<StarSystemAsset> selectedStar = new SimpleObjectProperty<>();
     private final ScrollPane scrollPane;
     private final int maxNumRow;
+    private final ObservableMap<Cell, StarSystemAsset> selectedStars;
     private HBox selected = null;
     private StarNode selectedNode;
 
-    public StarList(List<StarSystemAsset> starSystemAssets, ObservableList<StarSystemAsset> selectedStars, int maxProbes, List<StarNode> starNodes) {
+    public StarList(List<StarSystemAsset> starSystemAssets, int maxProbes, List<StarNode> starNodes,
+                    ReadOnlyBooleanProperty preselection) {
         super();
         setStyle(BACKGROUND_STYLE);
+        selectedStars = FXCollections.observableHashMap();
 
         scrollPane = new ScrollPane();
         getChildren().add(scrollPane);
@@ -44,7 +42,11 @@ public class StarList extends StackPane {
 
         for (int i = 0; i < starSystemAssets.size(); i++) {
             StarSystemAsset starSystemAsset = starSystemAssets.get(i);
-            var cell = createCell(starSystemAsset, selectedStars, maxProbes, starNodes, i/2);
+            var cell = new Cell(starSystemAsset, selectedStars, maxProbes, starNodes, i/2, preselection);
+            cell.getCheckBox().setOnMouseClicked(_ -> selectStar(starSystemAsset, cell, cell.getStarNode()));
+            cell.setOnMouseClicked(_ -> selectStar(starSystemAsset, cell, cell.getStarNode()));
+
+            cell.getStarNode().setOnMouseClicked(_ -> selectStar2(starSystemAsset, cell, cell.getStarNode()));
 
             gridPane.add(cell, i%2, i/2);
         }
@@ -57,44 +59,6 @@ public class StarList extends StackPane {
         columnConstraints.setPercentWidth(50);
         return columnConstraints;
     }
-
-    private Cell createCell(StarSystemAsset star, ObservableList<StarSystemAsset> selectedStars, int maxProbes, List<StarNode> starNodes, int row) {
-        Cell hBox = new Cell(row);
-        hBox.setSpacing(10);
-        hBox.setStyle(BACKGROUND_STYLE);
-        hBox.setAlignment(Pos.CENTER_LEFT);
-
-        StarNode node = new StarNode(star);
-        starNodes.add(node);
-
-        CheckBox checkBox = new CheckBox();
-        checkBox.selectedProperty().addListener((_, oldValue, newValue) -> {
-            if (Boolean.TRUE.equals(oldValue) && Boolean.FALSE.equals(newValue)) {
-                selectedStars.remove(star);
-                node.unchosenForProbe();
-            } else if (Boolean.FALSE.equals(oldValue) && Boolean.TRUE.equals(newValue)) {
-                if (selectedStars.size() < maxProbes) {
-                    selectedStars.add(star);
-                    node.chosenForProbe();
-                } else {
-                    checkBox.setSelected(false);
-                }
-            }
-        });
-
-        checkBox.setOnMouseClicked(_ -> selectStar(star, hBox, node));
-
-        Label starName = Utility.createLabel(star.nameProperty());
-        hBox.getChildren().addAll(checkBox, starName);
-
-        hBox.setOnMouseClicked(_ -> selectStar(star, hBox, node));
-
-        node.setOnMouseClicked(_ -> selectStar2(star, hBox, node));
-
-        return hBox;
-    }
-
-
 
     private void selectStar(StarSystemAsset star, Cell hBox, StarNode starNode) {
         selectedStar.set(star);
@@ -124,16 +88,15 @@ public class StarList extends StackPane {
         return selectedStar;
     }
 
-    private static class Cell extends HBox {
-        private final int rowNum;
+    ObservableMap<Cell, StarSystemAsset> getSelectedStarsForProbes() {
+        return selectedStars;
+    }
 
-        private Cell(int rowNum) {
-            super();
-            this.rowNum = rowNum;
+    public void reset() {
+        for (Cell cell : selectedStars.keySet()) {
+            cell.getCheckBox().setSelected(false);
+            cell.getStarNode().unchosenForProbe();
         }
-
-        public int getRowNum(){
-            return rowNum;
-        }
+        selectedStars.clear();
     }
 }

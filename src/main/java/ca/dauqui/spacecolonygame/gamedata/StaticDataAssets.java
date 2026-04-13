@@ -19,7 +19,7 @@ public class StaticDataAssets {
     private static final Logger LOG = Logger.getLogger(StaticDataAssets.class.getName());
 
     private static final String STAR_DATA_PATH = "src/main/resources/ca/dauqui/spacecolonygame/data/starsystems/";
-    private static final  double MAX_DISTANCE = 20.0;
+    private static final  double MAX_DISTANCE = 25.0;
 
 
     private final List<StarSystemAsset> starSystemAssets;

@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystemAsset;
+import ca.dauqui.spacecolonygame.gui.common.Utility;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
@@ -10,6 +11,10 @@ import javafx.scene.transform.Rotate;
 
 
 public class StarNode extends Group {
+    private static final int RADIUS_MULT = 15;
+    private static final int LIGHT_YEAR_SIZE = 12;
+    private static final int SELECTED_CIRCLE_SIZE = 10;
+    private static final int PROBE_CIRCLE_SIZE = 5;
 
     private final StarSystemAsset star;
     private final Group starCircleSelected;
@@ -18,46 +23,34 @@ public class StarNode extends Group {
     public StarNode(StarSystemAsset star) {
         this.star = star;
 
-        Sphere sphere = new Sphere(star.getRadius()*10);
+        Sphere sphere = new Sphere(star.getRadius() * RADIUS_MULT);
         getChildren().add(sphere);
 
         double temp = star.getTeff();
 
         PhongMaterial material = new PhongMaterial();
 
-        if (temp <= 3000){
-            material.setDiffuseColor(Color.rgb((int)(255.0 * (temp / 3000)), 0, 0));
-        } else if (temp <= 4000) {
-            material.setDiffuseColor(Color.rgb(255, (int)(127.0 * ((4000-temp)/1000)), 0));
-        } else if (temp <= 6000) {
-            material.setDiffuseColor(Color.rgb(255, 127 + (int)(128.0 * ((6000-temp)/2000)), 0));
-        } else if (temp <= 10000) {
-            material.setDiffuseColor(Color.rgb(255, 255, (int)(255.0 * ((10000-temp) / 4000))));
-        } else if (temp <= 25000) {
-            material.setDiffuseColor(Color.rgb(255 - (int)(255.0 * ((25000-temp) / 15000)), 255 - (int)(255.0 * ((25000-temp) / 15000)), 255));
-        } else {
-            material.setDiffuseColor(Color.rgb(0, 0, 255));
-        }
+        material.setDiffuseColor(Utility.getStarColor(temp));
 
         sphere.setMaterial(material);
 
-        setTranslateX(star.getCoordinate().getX()*15);
-        setTranslateY(star.getCoordinate().getY()*15);
-        setTranslateZ(star.getCoordinate().getZ()*15);
+        setTranslateX(star.getCoordinate().getX() * LIGHT_YEAR_SIZE);
+        setTranslateY(star.getCoordinate().getY() * LIGHT_YEAR_SIZE);
+        setTranslateZ(star.getCoordinate().getZ() * LIGHT_YEAR_SIZE);
 
         starCircleSelected = new Group();
 
-        Circle starCircleSelectedX = new Circle(star.getRadius()*10 + 10);
+        Circle starCircleSelectedX = new Circle(star.getRadius() * RADIUS_MULT + SELECTED_CIRCLE_SIZE);
         starCircleSelectedX.setFill(Color.TRANSPARENT);
         starCircleSelectedX.setStroke(Color.LIME);
 
-        Circle starCircleSelectedY = new Circle(star.getRadius()*10 + 10);
+        Circle starCircleSelectedY = new Circle(star.getRadius() * RADIUS_MULT + SELECTED_CIRCLE_SIZE);
         starCircleSelectedY.setFill(Color.TRANSPARENT);
         starCircleSelectedY.setStroke(Color.LIME);
         starCircleSelectedY.setRotationAxis(Rotate.X_AXIS);
         starCircleSelectedY.setRotate(90);
 
-        Circle starCircleSelectedZ = new Circle(star.getRadius()*10 + 10);
+        Circle starCircleSelectedZ = new Circle(star.getRadius() * RADIUS_MULT + SELECTED_CIRCLE_SIZE);
         starCircleSelectedZ.setFill(Color.TRANSPARENT);
         starCircleSelectedZ.setStroke(Color.LIME);
         starCircleSelectedZ.setRotationAxis(Rotate.Y_AXIS);
@@ -67,17 +60,17 @@ public class StarNode extends Group {
 
         starCircleProbeSelected = new Group();
 
-        Circle starCircleProbeSelectedX = new Circle(star.getRadius()*10 + 5);
+        Circle starCircleProbeSelectedX = new Circle(star.getRadius()*RADIUS_MULT + PROBE_CIRCLE_SIZE);
         starCircleProbeSelectedX.setFill(Color.TRANSPARENT);
         starCircleProbeSelectedX.setStroke(Color.BLUE);
 
-        Circle starCircleProbeSelectedY = new Circle(star.getRadius()*10 + 5);
+        Circle starCircleProbeSelectedY = new Circle(star.getRadius()*RADIUS_MULT + PROBE_CIRCLE_SIZE);
         starCircleProbeSelectedY.setFill(Color.TRANSPARENT);
         starCircleProbeSelectedY.setStroke(Color.BLUE);
         starCircleProbeSelectedY.setRotationAxis(Rotate.X_AXIS);
         starCircleProbeSelectedY.setRotate(90);
 
-        Circle starCircleProbeSelectedZ = new Circle(star.getRadius()*10 + 5);
+        Circle starCircleProbeSelectedZ = new Circle(star.getRadius()*RADIUS_MULT + PROBE_CIRCLE_SIZE);
         starCircleProbeSelectedZ.setFill(Color.TRANSPARENT);
         starCircleProbeSelectedZ.setStroke(Color.BLUE);
         starCircleProbeSelectedZ.setRotationAxis(Rotate.Y_AXIS);

@@ -1,0 +1,2 @@
+NAME Luyten 100-115
+DESCRIPTION A temporary description for Luyten 100-115

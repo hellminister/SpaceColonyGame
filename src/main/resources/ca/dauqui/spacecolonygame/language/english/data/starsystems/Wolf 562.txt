@@ -1,0 +1,2 @@
+NAME Wolf 562
+DESCRIPTION A temporary description for Wolf 562

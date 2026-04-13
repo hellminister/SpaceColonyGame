@@ -1,0 +1,2 @@
+NAME LHS 6158 C
+DESCRIPTION A temporary description for LHS 6158 C

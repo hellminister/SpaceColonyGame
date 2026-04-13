@@ -46,11 +46,19 @@ public class StarSystemAsset {
     }
 
     public int getMinNumberOfPlanets() {
-        return Integer.parseInt(data.get(StarDataColumn.MINPLN));
+        if (!"".equals(data.get(StarDataColumn.MINPLN))) {
+            return Integer.parseInt(data.get(StarDataColumn.MINPLN).trim());
+        }  else {
+            return -1;
+        }
     }
 
     public int getMaxNumberOfPlanets() {
-        return Integer.parseInt(data.get(StarDataColumn.MAXPLN));
+        if (!"".equals(data.get(StarDataColumn.MAXPLN))) {
+            return Integer.parseInt(data.get(StarDataColumn.MAXPLN).trim());
+        }  else {
+            return -1;
+        }
     }
 
     public void addPlanetAsset(PlanetAsset planet) {
@@ -87,6 +95,26 @@ public class StarSystemAsset {
         }  else {
             return -1.0;
         }
+    }
+
+    public double getVisualLum() {
+        if (!"".equals(data.get(StarDataColumn.VIS_LUM))) {
+            return Double.parseDouble(data.get(StarDataColumn.VIS_LUM).replace("?", "").trim());
+        }  else {
+            return -1.0;
+        }
+    }
+
+    public Double getBolometricLum() {
+        if (!"".equals(data.get(StarDataColumn.BOL_LUM))) {
+            return Double.parseDouble(data.get(StarDataColumn.BOL_LUM).replace("?", "").trim());
+        }  else {
+            return -1.0;
+        }
+    }
+
+    public List<PlanetAsset> getKnownPlanets() {
+        return planetAssets;
     }
 
     public enum Target{

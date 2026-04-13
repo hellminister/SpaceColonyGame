@@ -17,4 +17,16 @@ public class PlanetAsset {
         temp.put(StarDataColumn.SPEC, temp.get(StarDataColumn.SPEC).replace(" ", "-"));
         data = Collections.unmodifiableMap(temp);
     }
+
+    public double getTeff() {
+        if (!"".equals(data.get(StarDataColumn.TEFF))) {
+            return Double.parseDouble(data.get(StarDataColumn.TEFF).replace("?", "").trim());
+        }  else {
+            return -1.0;
+        }
+    }
+
+    public String getType() {
+        return data.get(StarDataColumn.TY);
+    }
 }

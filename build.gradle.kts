@@ -17,7 +17,7 @@ val junitVersion = "5.12.1"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(26)
     }
 }
 
@@ -31,7 +31,7 @@ application {
 }
 
 javafx {
-    version = "25.0.2"
+    version = "26"
     modules = listOf("javafx.controls", "javafx.fxml")
 }
 
