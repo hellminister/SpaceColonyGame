@@ -13,17 +13,19 @@ import java.util.logging.Logger;
 /**
  * This class serves as an image library so an image is loaded only once
  */
-public final class ImageLibrary {
+@SuppressWarnings("java:S6548")
+public enum ImageLibrary {
+    IMAGE_LIBRARY;
+
     private static final Logger LOG = Logger.getLogger(ImageLibrary.class.getName());
 
     private static final String IMAGE_LIBRARY_FILE_PATH = "src/main/resources/ca/dauqui/spacecolonygame/images/";
 
-    private static final ImageLibrary library = new ImageLibrary();
 
     // stores the Images from the common resources folder
     private final Map<String, Image> theLibrary;
 
-    private ImageLibrary() {
+    ImageLibrary() {
         theLibrary = new ConcurrentHashMap<>();
     }
 
@@ -34,8 +36,8 @@ public final class ImageLibrary {
      * @param imagePath the image path and name following the images folder
      * @return the asked Image (might return null if the file doesn't exist)
      */
-    public static Image getImage(String imagePath) {
-        return library.theLibrary.computeIfAbsent(imagePath, key -> {
+    public Image getImage(String imagePath) {
+        return theLibrary.computeIfAbsent(imagePath, key -> {
             try (InputStream is = Files.newInputStream(Paths.get(IMAGE_LIBRARY_FILE_PATH + key ))) {
                 return new Image(is);
             } catch (IOException e) {

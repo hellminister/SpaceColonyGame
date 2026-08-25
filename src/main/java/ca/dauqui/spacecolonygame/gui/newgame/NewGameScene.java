@@ -240,7 +240,9 @@ public class NewGameScene extends Scene {
         takeoffButton.setOnAction(_ -> {
             shipTakeOff.setVisible(false);
             choosePlanet.setVisible(true);
-            choosePlanet.setSystem(starSelection.getGeneratedChosenStarSystem());
+            StarSystem selected = starSelection.getGeneratedChosenStarSystem();
+            choosePlanet.setSystem(selected);
+            mainWindow.getColony().setStarSystem(selected);
         });
 
         root.getChildren().add(takeoffButton);

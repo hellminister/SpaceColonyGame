@@ -71,7 +71,7 @@ public class ChoosePlanetScreen extends VBox {
                     clearPlanets();
                     for (Planet planet : newValue.getPlanets()) {
                         PlanetNode planetNode = new PlanetNode(planet);
-                        planetNode.setOnMouseClicked(event -> {
+                        planetNode.setOnMouseClicked(_ -> {
                             if (selectedPlanet.get() != null) {
                                 selectedPlanet.get().setSelected(false);
                             }
@@ -98,11 +98,12 @@ public class ChoosePlanetScreen extends VBox {
         });
 
 
+        GridPane infoGrid = createInfoGrid();
 
+        getChildren().addAll(planetView, infoGrid);
+    }
 
-
-
-
+    private GridPane createInfoGrid() {
         GridPane infoGrid = new GridPane();
 
         infoGrid.maxHeightProperty().bind(heightProperty().multiply(0.33));
@@ -116,7 +117,12 @@ public class ChoosePlanetScreen extends VBox {
                 "-fx-border-width: 1px;" +
                 "-fx-border-color: blue");
 
-        getChildren().addAll(planetView, infoGrid);
+
+
+
+
+
+        return infoGrid;
     }
 
     private void clearPlanets() {
