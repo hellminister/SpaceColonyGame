@@ -29,4 +29,16 @@ public class PlanetAsset {
     public String getType() {
         return data.get(StarDataColumn.TY);
     }
+
+    public double getRadius() {
+        if (!data.get(StarDataColumn.RADIUS).replace("?", "").trim().isEmpty()) {
+            return Double.parseDouble(data.get(StarDataColumn.RADIUS).replace("?", "").trim());
+        } else  {
+            return -1.0;
+        }
+    }
+
+    public String getRadiusUnit() {
+        return data.get(StarDataColumn.RADIUS_UNIT);
+    }
 }

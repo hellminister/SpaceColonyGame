@@ -114,79 +114,51 @@ public class StarSelectionScreen extends GridPane {
         starNameLabel.setFont(new Font("Arial", 20));
         starNameLabel.setTextFill(Color.DARKORANGE);
 
-        GridPane starInfosGrid =  new GridPane();
-        var colConst1InfoPane = new ColumnConstraints();
-        colConst1InfoPane.setPercentWidth(50);
-        var colConst2InfoPane = new ColumnConstraints();
-        colConst2InfoPane.setPercentWidth(50);
+        InfoGrid<StarSystemAsset> starInfosGrid = new InfoGrid<>(2);
 
-        starInfosGrid.getColumnConstraints().addAll(colConst1InfoPane, colConst2InfoPane);
-        starInfosGrid.setVgap(5);
         starInfoBox.getChildren().addAll(starNameLabel, starInfosGrid);
 
         Tooltip solarUnit = new Tooltip();
         solarUnit.textProperty().bind(Target.TOOLTIP_SOLAR_UNIT.localizedProperty());
 
-        Label spectral = Utility.createLabelUnbound();
-        spectral.textProperty().bind(new StarInfoBinding(Target.SPECTRAL_LABEL.localizedProperty(), stars.getSelection(), StarSystemAsset::getSpectralType));
-        starInfosGrid.add(spectral, 0, 0);
 
-        Label mass = Utility.createLabelUnbound();
-        mass.textProperty().bind(new StarInfoBinding(Target.MASS_LABEL.localizedProperty(), stars.getSelection(), star -> String.format("%.2f",
-                star.getMass())));
+        starInfosGrid.addInfo(0, 0, Target.SPECTRAL_LABEL.localizedProperty(), stars.getSelection(), StarSystemAsset::getSpectralType);
+
+        Label mass = starInfosGrid.addInfo(1, 0,Target.MASS_LABEL.localizedProperty(), stars.getSelection(), star -> String.format("%.2f",
+                star.getMass()));
         mass.setTooltip(solarUnit);
-        starInfosGrid.add(mass, 1, 0);
 
-        Label distance = Utility.createLabelUnbound();
-        distance.textProperty().bind(new StarInfoBinding(Target.DISTANCE_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.4f", star.getDistance())));
-        starInfosGrid.add(distance, 0, 1);
+        starInfosGrid.addInfo(0,1, Target.DISTANCE_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.4f", star.getDistance()));
 
-        Label mainShipTravel = Utility.createLabelUnbound();
-        mainShipTravel.textProperty().bind(new StarInfoBinding(Target.MAIN_SHIP_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.2f", star.getDistance()/0.30)));
-        starInfosGrid.add(mainShipTravel, 1, 1);
+        starInfosGrid.addInfo(1, 1,Target.MAIN_SHIP_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.2f", star.getDistance()/0.30));
 
-        Label humanityTravel = Utility.createLabelUnbound();
-        humanityTravel.textProperty().bind(new StarInfoBinding(Target.HUMANITY_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.2f", star.getDistance()/0.005)));
-        starInfosGrid.add(humanityTravel, 0, 2);
+        starInfosGrid.addInfo(0, 2, Target.HUMANITY_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.2f", star.getDistance()/0.005));
 
-        Label humanitySurvival = Utility.createLabelUnbound();
-        humanitySurvival.textProperty().bind(new StarInfoBinding(Target.HUMANITY_TRANSIT_SURVIVAL_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.4f %%", (1/((star.getDistance()-40)*0.00061) + 110))));
-        starInfosGrid.add(humanitySurvival, 1, 2);
+        starInfosGrid.addInfo(1, 2, Target.HUMANITY_TRANSIT_SURVIVAL_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.4f %%", (1/((star.getDistance()-40)*0.00061) + 110)));
 
-        Label visualLum = Utility.createLabelUnbound();
-        visualLum.textProperty().bind(new StarInfoBinding(Target.VISUAL_LUM_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.4f", star.getVisualLum())));
+        Label visualLum = starInfosGrid.addInfo(0, 3, Target.VISUAL_LUM_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.4f", star.getVisualLum()));
         visualLum.setTooltip(solarUnit);
-        starInfosGrid.add(visualLum, 0, 3);
 
-        Label bolometricLum = Utility.createLabelUnbound();
-        bolometricLum.textProperty().bind(new StarInfoBinding(Target.BOLOMETRIC_LUM_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.4f", star.getBolometricLum())));
+        Label bolometricLum = starInfosGrid.addInfo(1, 3, Target.BOLOMETRIC_LUM_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.4f", star.getBolometricLum()));
         bolometricLum.setTooltip(solarUnit);
-        starInfosGrid.add(bolometricLum, 1, 3);
 
-        Label temperature = Utility.createLabelUnbound();
-        temperature.textProperty().bind(new StarInfoBinding(Target.TEFF_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.0f K", star.getTeff())));
-        starInfosGrid.add(temperature, 0, 4);
+        starInfosGrid.addInfo(0, 4, Target.TEFF_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.0f K", star.getTeff()));
 
-        Label radius = Utility.createLabelUnbound();
-        radius.textProperty().bind(new StarInfoBinding(Target.RADIUS_LABEL.localizedProperty(), stars.getSelection(),
-                star -> String.format("%.3f", star.getRadius())));
+        Label radius = starInfosGrid.addInfo(1, 4, Target.RADIUS_LABEL.localizedProperty(), stars.getSelection(),
+                star -> String.format("%.3f", star.getRadius()));
         radius.setTooltip(solarUnit);
-        starInfosGrid.add(radius, 1, 4);
 
-        Label knownPlanets = Utility.createLabelUnbound();
-        knownPlanets.textProperty().bind(new StarInfoBinding(Target.NUM_KNOWN_PLANETS.localizedProperty(), stars.getSelection(),
-                star -> String.format("%d", star.getKnownPlanets().size())));
-        starInfosGrid.add(knownPlanets, 0, 5);
+        starInfosGrid.addInfo(0, 5, Target.NUM_KNOWN_PLANETS.localizedProperty(), stars.getSelection(),
+                star -> String.format("%d", star.getKnownPlanets().size()));
 
-        Label foundPlanets = Utility.createLabelUnbound();
-        foundPlanets.textProperty().bind(new StarInfoBinding(Target.NUM_FOUND_PLANETS.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(1, 5, Target.NUM_FOUND_PLANETS.localizedProperty(), stars.getSelection(),
                 star -> {
                  if (star == null) {
                      return "";
@@ -197,15 +169,12 @@ public class StarSelectionScreen extends GridPane {
                  } else {
                      return String.format("%d", star2.getPlanets().size());
                  }
-                }));
-        starInfosGrid.add(foundPlanets, 1, 5);
+                });
 
-        Label habitableLabel = Utility.createLabel(Target.HABITABLE_PROBABILITY_LABEL.localizedProperty());
-        starInfosGrid.add(habitableLabel, 0, 6);
+        Label habitableLabel = starInfosGrid.addInfo(0, 6, Target.HABITABLE_PROBABILITY_LABEL.localizedProperty());
         GridPane.setHalignment(habitableLabel, HPos.RIGHT);
 
-        Label habitableProb = Utility.createLabelUnbound();
-        habitableProb.textProperty().bind(new StringBinding() {
+        starInfosGrid.addInfo(1, 6, new StringBinding() {
 
             {
                 bind(stars.getSelection());
@@ -224,7 +193,6 @@ public class StarSelectionScreen extends GridPane {
                 }
             }
         });
-        starInfosGrid.add(habitableProb, 1, 6);
 
         stars.getSelection().addListener((_, _, newValue) -> {
             if (newValue != null) {
@@ -269,33 +237,6 @@ public class StarSelectionScreen extends GridPane {
         }
 
         return system;
-    }
-
-    private static class StarInfoBinding extends StringBinding {
-        private final ReadOnlyStringProperty infoLabel;
-        private final ReadOnlyObjectProperty<StarSystemAsset> star;
-        private final ExtractFieldString extractor;
-
-        StarInfoBinding(ReadOnlyStringProperty infoLabel, ReadOnlyObjectProperty<StarSystemAsset> star, ExtractFieldString extractor) {
-            this.infoLabel = infoLabel;
-            this.star = star;
-            this.extractor = extractor;
-            bind(infoLabel, star);
-        }
-
-        @Override
-        protected String computeValue() {
-            if (star.get() != null) {
-                return infoLabel.get() + " " + extractor.extractString(star.get());
-            } else {
-                return infoLabel.get();
-            }
-        }
-    }
-
-    @FunctionalInterface
-    private interface ExtractFieldString {
-        String extractString(StarSystemAsset star);
     }
 
     @FunctionalInterface

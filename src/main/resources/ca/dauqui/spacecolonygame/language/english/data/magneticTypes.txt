@@ -1,0 +1,4 @@
+NONE None
+WEAK Weak
+MODERATE Moderate
+INTENSE Intense

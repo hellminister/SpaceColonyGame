@@ -4,6 +4,8 @@ import ca.dauqui.spacecolonygame.util.PathProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -59,6 +61,10 @@ public class Localize<T extends Enum<T>> {
     // the language of this localization
     private final String localLanguage;
 
+    // Référence forte conservée au niveau de l'instance pour éviter
+    // que l'écouteur soit nettoyé prématurément par le Garbage Collector
+    private final ChangeListener<String> languageListener;
+
     /**
      * Use this constructor to have the localization follow the setLanguage static function
      * @param enumType the enum type used to represent the localized strings
@@ -74,11 +80,14 @@ public class Localize<T extends Enum<T>> {
         localizedStrings = Collections.unmodifiableMap(temp);
 
         // adding a listener to language so that this instance updates itself when the language changes
-        language.addListener((_, oldV, newV) -> {
+        // using a weak reference to make this object collectable
+        this.languageListener = (_, oldV, newV) -> {
             if (!oldV.equalsIgnoreCase(newV) && !newV.isBlank()) {
                 loadLanguage();
             }
-        });
+        };
+
+        language.addListener(new WeakChangeListener<>(this.languageListener));
 
         // loading the localization file if a language is set
         if (!language.get().isBlank()){
@@ -96,6 +105,7 @@ public class Localize<T extends Enum<T>> {
         this.enumType = enumType;
         this.localizeFor = localizeFor;
         this.localLanguage = language;
+        this.languageListener = null; // not used when it is uncoupled from the global language
         EnumMap<T, StringProperty> temp = new EnumMap<>(enumType);
         Arrays.stream(enumType.getEnumConstants()).forEach(target -> temp.put(target, new SimpleStringProperty(target.name() + " not defined")));
 

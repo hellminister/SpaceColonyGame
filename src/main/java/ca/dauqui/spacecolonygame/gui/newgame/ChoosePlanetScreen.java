@@ -3,7 +3,11 @@ package ca.dauqui.spacecolonygame.gui.newgame;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.Planet;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
+import ca.dauqui.spacecolonygame.localization.Localizable;
+import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.layout.GridPane;
@@ -103,8 +107,8 @@ public class ChoosePlanetScreen extends VBox {
         getChildren().addAll(planetView, infoGrid);
     }
 
-    private GridPane createInfoGrid() {
-        GridPane infoGrid = new GridPane();
+    private InfoGrid<Planet> createInfoGrid() {
+        InfoGrid<Planet> infoGrid = new InfoGrid<>(2);
 
         infoGrid.maxHeightProperty().bind(heightProperty().multiply(0.33));
         infoGrid.maxWidthProperty().bind(widthProperty());
@@ -137,5 +141,23 @@ public class ChoosePlanetScreen extends VBox {
 
     public Planet getPlanet() {
         return this.selectedPlanet.get().getPlanet();
+    }
+
+
+    @Localized
+    private enum Target implements Localizable {
+
+        ;
+
+        private static final Localize<ChoosePlanetScreen.Target> local = new Localize<>(ChoosePlanetScreen.Target.class, "gui/planetSelectionScreen.txt");
+
+        @Override
+        public ReadOnlyStringProperty localizedProperty() {
+            return local.getString(this);
+        }
+        @Override
+        public String toString() {
+            return local.getString(this).get();
+        }
     }
 }

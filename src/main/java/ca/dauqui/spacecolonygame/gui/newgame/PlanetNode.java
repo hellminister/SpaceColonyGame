@@ -37,13 +37,16 @@ public class PlanetNode extends Group {
         planetLine.setStroke(Color.LIGHTSLATEGRAY);
 
         Circle planetImage = new Circle();
-        planetImage.setRadius(50);
-        planetImage.setFill(Color.BROWN);
+        double planetRadius = planet.getRadius() * (planet.getRadiusUnit().contains("j") ? 50 : 10);
+
+        planetImage.setRadius(planetRadius);
+        Color planetColor = planet.getRadiusUnit().contains("j") ? Color.RED : Color.DARKORANGE;
+        planetImage.setFill(planetColor);
 
 
 
         Circle selected = new Circle();
-        selected.setRadius(60);
+        selected.setRadius(planetRadius + 10);
         selected.setStroke(Color.LIME);
         selected.setFill(Color.TRANSPARENT);
         selectedCircle.getChildren().add(selected);
