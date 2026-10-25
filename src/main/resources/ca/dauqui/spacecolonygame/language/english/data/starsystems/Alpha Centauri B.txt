@@ -1,2 +1,0 @@
-NAME Alpha Centauri B
-DESCRIPTION A temporary description for Alpha Centauri B

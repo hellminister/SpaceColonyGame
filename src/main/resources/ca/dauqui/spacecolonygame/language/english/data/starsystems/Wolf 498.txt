@@ -1,2 +1,0 @@
-NAME Wolf 498
-DESCRIPTION A temporary description for Wolf 498

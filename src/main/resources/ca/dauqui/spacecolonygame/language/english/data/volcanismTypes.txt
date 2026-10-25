@@ -1,4 +1,0 @@
-NONE None
-LOW Low
-ACTIVE Active
-INTENSE Intense

@@ -1,2 +1,0 @@
-NAME GL Virginis
-DESCRIPTION A temporary description for GL Virginis

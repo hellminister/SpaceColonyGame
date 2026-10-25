@@ -1,2 +1,0 @@
-NAME Ross 128
-DESCRIPTION A temporary description for Ross 128

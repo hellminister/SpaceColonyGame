@@ -4,9 +4,7 @@ import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.BackgroundImagePane;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
-import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
-import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -20,6 +18,8 @@ import java.util.logging.Logger;
 
 public class NewGameScene extends Scene {
     private static final Logger LOG = Logger.getLogger(NewGameScene.class.getName());
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
+
 
     private final MainWindow mainWindow;
 
@@ -76,10 +76,10 @@ public class NewGameScene extends Scene {
 
         root.setMaxSize(400, 500);
 
-        Label storyText = Utility.createLabel(Target.STORY.localizedProperty());
+        Label storyText = Utility.createLabel(localizedProperty("NewGameScene.STORY"));
 
         Button readStoryNextButton = new Button();
-        readStoryNextButton.textProperty().bind(Target.STORY_NEXT.localizedProperty());
+        readStoryNextButton.textProperty().bind(localizedProperty("NewGameScene.STORY_NEXT"));
 
         readStoryNextButton.setOnAction(_ -> {
             readStory.setVisible(false);
@@ -98,16 +98,16 @@ public class NewGameScene extends Scene {
     }
 
     private Node createCommanderName() {
-        return createSetNamesBox(Target.COMMANDER_LABEL,
-                Target.COMMANDER_DEFAULT_NAME,
-                Target.COMMANDER_NEXT,
+        return createSetNamesBox(localizedProperty("NewGameScene.COMMANDER_LABEL"),
+                localizedProperty("NewGameScene.COMMANDER_DEFAULT_NAME"),
+                        localizedProperty("NewGameScene.COMMANDER_NEXT"),
                 name -> {
                     mainWindow.getColony().setCommanderName(name);
 
                     commanderName.setVisible(false);
                     aiName.setVisible(true);
                 },
-                Target.COMMANDER_BACK,
+                                localizedProperty("NewGameScene.COMMANDER_BACK"),
                 _ -> {
                     commanderName.setVisible(false);
                     readStory.setVisible(true);
@@ -115,9 +115,9 @@ public class NewGameScene extends Scene {
     }
 
     private Node createAiName() {
-        return createSetNamesBox(Target.AI_LABEL,
-                Target.AI_DEFAULT_NAME,
-                Target.AI_NEXT,
+        return createSetNamesBox(localizedProperty("NewGameScene.AI_LABEL"),
+                localizedProperty("NewGameScene.AI_DEFAULT_NAME"),
+                        localizedProperty("NewGameScene.AI_NEXT"),
                 name -> {
             mainWindow.getColony().setAIName(name);
 
@@ -125,14 +125,15 @@ public class NewGameScene extends Scene {
             starSelection.setVisible(true);
             starSelection.setPreselection(true);
         },
-                Target.AI_BACK,
+                                localizedProperty("NewGameScene.AI_BACK"),
                 _ -> {
             aiName.setVisible(false);
             commanderName.setVisible(true);
         });
     }
 
-    private Node createSetNamesBox(Target label1, Target defaultName, Target nextButtonText, Action nextButtonAction, Target backButtonText, Action backButtonAction){
+    private Node createSetNamesBox(ReadOnlyStringProperty label1, ReadOnlyStringProperty defaultName, ReadOnlyStringProperty nextButtonText, Action nextButtonAction, ReadOnlyStringProperty backButtonText,
+                                   Action backButtonAction){
         VBox root = new VBox();
 
         root.setStyle("-fx-background-color: black;" +
@@ -142,11 +143,11 @@ public class NewGameScene extends Scene {
         root.setMaxSize(400, 100);
         root.setSpacing(10);
 
-        Label nameText = Utility.createLabel(label1.localizedProperty());
+        Label nameText = Utility.createLabel(label1);
 
         TextField nameTextField = new TextField();
-        nameTextField.setText(defaultName.toString());
-        defaultName.localizedProperty().addListener((_, oldValue, newValue) -> {
+        nameTextField.setText(defaultName.get());
+        defaultName.addListener((_, oldValue, newValue) -> {
             String previous = nameTextField.getText();
             if (previous.trim().equals(oldValue.trim())) {
                 nameTextField.setText(newValue);
@@ -159,12 +160,12 @@ public class NewGameScene extends Scene {
         buttonBar.setAlignment(Pos.CENTER);
 
         Button nextButton  = new Button();
-        nextButton.textProperty().bind(nextButtonText.localizedProperty());
+        nextButton.textProperty().bind(nextButtonText);
         nextButton.setOnAction(_ -> nextButtonAction.run(nameTextField.getText()));
         Utility.setButtonStyle(nextButton);
 
         Button previousButton = new Button();
-        previousButton.textProperty().bind(backButtonText.localizedProperty());
+        previousButton.textProperty().bind(backButtonText);
         previousButton.setOnAction(_ -> backButtonAction.run(""));
         Utility.setButtonStyle(previousButton);
 
@@ -236,7 +237,7 @@ public class NewGameScene extends Scene {
         root.setStyle("-fx-background-color: black");
 
         Button takeoffButton = new Button();
-        takeoffButton.textProperty().bind(Target.TAKEOFF_NEXT.localizedProperty());
+        takeoffButton.textProperty().bind(localizedProperty("NewGameScene.TAKEOFF_NEXT"));
         takeoffButton.setOnAction(_ -> {
             shipTakeOff.setVisible(false);
             choosePlanet.setVisible(true);
@@ -275,36 +276,13 @@ public class NewGameScene extends Scene {
         ((Pane) getRoot()).setPrefHeight(height);
     }
 
+    public static ReadOnlyStringProperty localizedProperty(String name) {
+        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+    }
+
     @FunctionalInterface
     private interface Action{
         void run(String name);
-    }
-
-    @Localized
-    private enum Target implements Localizable {
-        STORY,
-        STORY_NEXT,
-        COMMANDER_LABEL,
-        COMMANDER_NEXT,
-        COMMANDER_BACK,
-        COMMANDER_DEFAULT_NAME,
-        AI_LABEL,
-        AI_NEXT,
-        AI_BACK,
-        AI_DEFAULT_NAME,
-        TAKEOFF_NEXT,
-        ;
-
-        private static final Localize<Target> local = new Localize<>(Target.class, "gui/newGameSceneTarget.txt");
-
-        @Override
-        public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
-        }
-        @Override
-        public String toString() {
-            return local.getString(this).get();
-        }
     }
 
 }

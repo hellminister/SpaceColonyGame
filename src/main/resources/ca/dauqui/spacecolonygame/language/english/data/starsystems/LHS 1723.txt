@@ -1,2 +1,0 @@
-NAME LHS 1723
-DESCRIPTION A temporary description for LHS 1723

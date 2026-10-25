@@ -1,2 +1,0 @@
-NAME Beta Hydri
-DESCRIPTION A temporary description for Beta Hydri

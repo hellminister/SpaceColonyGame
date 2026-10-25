@@ -1,2 +1,0 @@
-NAME Wolf 25
-DESCRIPTION A temporary description for Wolf 25

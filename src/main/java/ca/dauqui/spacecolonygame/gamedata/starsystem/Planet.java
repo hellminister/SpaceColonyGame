@@ -11,6 +11,12 @@ public class Planet {
     private final double atmosphericPressure; // En bars
     private final double distance; // En AU
 
+    private final double albedo;
+    private final double orbitalPeriodDays;  // Révolution (Durée de l'année)
+    private final double rotationPeriodHours; // Rotation (Durée du jour)
+    private final double axisTilt;           // Inclinaison de l'axe
+    private final boolean isTidallyLocked;   // Verrouillage gravitationnel
+
     // Caractéristiques physiques localisables fortement typées
     private final AtmosphereComposition atmosphereComposition;
     private final TectonicType tectonic;
@@ -20,6 +26,8 @@ public class Planet {
     @SuppressWarnings("java:S107")
     public Planet(String type, double radius, String radiusUnit, double mass, double gravity,
                   double temperature, double atmosphericPressure, double distance,
+                  double albedo, double orbitalPeriodDays, double rotationPeriodHours,
+                  double axisTilt, boolean isTidallyLocked,
                   AtmosphereComposition atmosphereComposition, TectonicType tectonic,
                   VolcanismLevel volcanism, MagneticFieldStrength magneticField) {
         this.type = type;
@@ -30,6 +38,13 @@ public class Planet {
         this.temperature = temperature;
         this.atmosphericPressure = atmosphericPressure;
         this.distance = distance;
+
+        this.albedo = albedo;
+        this.orbitalPeriodDays = orbitalPeriodDays;
+        this.rotationPeriodHours = rotationPeriodHours;
+        this.axisTilt = axisTilt;
+        this.isTidallyLocked = isTidallyLocked;
+
         this.atmosphereComposition = atmosphereComposition;
         this.tectonic = tectonic;
         this.volcanism = volcanism;
@@ -80,4 +95,14 @@ public class Planet {
     public double getDistance() {
         return distance;
     }
+
+    public double getAtmosphericPressure() {
+        return atmosphericPressure;
+    }
+
+    public double getAlbedo() { return albedo; }
+    public double getOrbitalPeriodDays() { return orbitalPeriodDays; }
+    public double getRotationPeriodHours() { return rotationPeriodHours; }
+    public double getAxisTilt() { return axisTilt; }
+    public boolean isTidallyLocked() { return isTidallyLocked; }
 }

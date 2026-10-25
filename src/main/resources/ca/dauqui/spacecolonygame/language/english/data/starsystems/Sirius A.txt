@@ -1,2 +1,0 @@
-NAME Sirius A
-DESCRIPTION A temporary description for Sirius A

@@ -1,2 +1,0 @@
-NAME LHS 546
-DESCRIPTION A temporary description for LHS 546

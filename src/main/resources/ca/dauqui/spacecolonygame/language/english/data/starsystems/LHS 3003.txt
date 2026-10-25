@@ -1,2 +1,0 @@
-NAME LHS 3003
-DESCRIPTION A temporary description for LHS 3003

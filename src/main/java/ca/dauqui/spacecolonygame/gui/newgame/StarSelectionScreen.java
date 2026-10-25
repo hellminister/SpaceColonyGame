@@ -4,13 +4,10 @@ import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystemAsset;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
-import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
-import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.HPos;
@@ -28,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 public class StarSelectionScreen extends GridPane {
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
+
     private static final int MAX_SELECTED_STARS = 4;
 
     private final BooleanProperty preselection;
@@ -65,25 +64,25 @@ public class StarSelectionScreen extends GridPane {
 
         VBox starListBox = new VBox();
         starListBox.setAlignment(Pos.CENTER);
-        Label starListLabel = Utility.createLabel(Target.STAR_LIST_LABEL.localizedProperty());
+        Label starListLabel = Utility.createLabel(localizedProperty("StarSelectionScreen.STAR_LIST_LABEL"));
 
         stars = new StarList(mainWindow.getAssets().getStarSystems(), MAX_SELECTED_STARS, starNodes, preselection);
 
-        Label probes = Utility.createLabel(Target.PROBES_LEFT.localizedProperty());
+        Label probes = Utility.createLabel(localizedProperty("StarSelectionScreen.PROBES_LEFT"));
         probes.textProperty().unbind();
-        probes.textProperty().bind(Bindings.concat(Target.PROBES_LEFT.localizedProperty(), " ", Bindings.subtract(MAX_SELECTED_STARS, Bindings.size(stars.getSelectedStarsForProbes())) ));
+        probes.textProperty().bind(Bindings.concat(localizedProperty("StarSelectionScreen.PROBES_LEFT"), " ", Bindings.subtract(MAX_SELECTED_STARS, Bindings.size(stars.getSelectedStarsForProbes())) ));
         probes.visibleProperty().bind(preselection);
 
         StackPane launchButtons = new StackPane();
 
         Button launchProbeButton = new Button();
-        launchProbeButton.textProperty().bind(Target.LAUNCH_PROBE_BUTTON.localizedProperty());
+        launchProbeButton.textProperty().bind(localizedProperty("StarSelectionScreen.LAUNCH_PROBE_BUTTON"));
         Utility.setButtonStyle(launchProbeButton);
         launchProbeButton.setOnAction(_ -> launchProbeAction.launch());
         launchProbeButton.visibleProperty().bind(preselection);
 
         Button launchShipButton = new Button();
-        launchShipButton.textProperty().bind(Target.LAUNCH_SHIP_BUTTON.localizedProperty());
+        launchShipButton.textProperty().bind(localizedProperty("StarSelectionScreen.LAUNCH_SHIP_BUTTON"));
         Utility.setButtonStyle(launchShipButton);
         launchShipButton.setOnAction(_ -> launchShipAction.launch());
         launchShipButton.visibleProperty().bind(preselection.not());
@@ -97,7 +96,7 @@ public class StarSelectionScreen extends GridPane {
 
         VBox descriptionBox = new VBox();
         descriptionBox.setSpacing(10);
-        Label descriptionTitle = Utility.createLabel(Target.DESCRIPTION.localizedProperty());
+        Label descriptionTitle = Utility.createLabel(localizedProperty("StarSelectionScreen.DESCRIPTION"));
 
         Label description = Utility.createLabelUnbound();
         description.setWrapText(true);
@@ -119,46 +118,46 @@ public class StarSelectionScreen extends GridPane {
         starInfoBox.getChildren().addAll(starNameLabel, starInfosGrid);
 
         Tooltip solarUnit = new Tooltip();
-        solarUnit.textProperty().bind(Target.TOOLTIP_SOLAR_UNIT.localizedProperty());
+        solarUnit.textProperty().bind(localizedProperty("StarSelectionScreen.TOOLTIP_SOLAR_UNIT"));
 
 
-        starInfosGrid.addInfo(0, 0, Target.SPECTRAL_LABEL.localizedProperty(), stars.getSelection(), StarSystemAsset::getSpectralType);
+        starInfosGrid.addInfo(0, 0, localizedProperty("StarSelectionScreen.SPECTRAL_LABEL"), stars.getSelection(), StarSystemAsset::getSpectralType);
 
-        Label mass = starInfosGrid.addInfo(1, 0,Target.MASS_LABEL.localizedProperty(), stars.getSelection(), star -> String.format("%.2f",
+        Label mass = starInfosGrid.addInfo(1, 0, localizedProperty("StarSelectionScreen.MASS_LABEL"), stars.getSelection(), star -> String.format("%.2f",
                 star.getMass()));
         mass.setTooltip(solarUnit);
 
-        starInfosGrid.addInfo(0,1, Target.DISTANCE_LABEL.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(0,1, localizedProperty("StarSelectionScreen.DISTANCE_LABEL"), stars.getSelection(),
                 star -> String.format("%.4f", star.getDistance()));
 
-        starInfosGrid.addInfo(1, 1,Target.MAIN_SHIP_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(1, 1, localizedProperty("StarSelectionScreen.MAIN_SHIP_TRAVEL_LABEL"), stars.getSelection(),
                 star -> String.format("%.2f", star.getDistance()/0.30));
 
-        starInfosGrid.addInfo(0, 2, Target.HUMANITY_TRAVEL_LABEL.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(0, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRAVEL_LABEL"), stars.getSelection(),
                 star -> String.format("%.2f", star.getDistance()/0.005));
 
-        starInfosGrid.addInfo(1, 2, Target.HUMANITY_TRANSIT_SURVIVAL_LABEL.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(1, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRANSIT_SURVIVAL_LABEL"), stars.getSelection(),
                 star -> String.format("%.4f %%", (1/((star.getDistance()-40)*0.00061) + 110)));
 
-        Label visualLum = starInfosGrid.addInfo(0, 3, Target.VISUAL_LUM_LABEL.localizedProperty(), stars.getSelection(),
+        Label visualLum = starInfosGrid.addInfo(0, 3, localizedProperty("StarSelectionScreen.VISUAL_LUM_LABEL"), stars.getSelection(),
                 star -> String.format("%.4f", star.getVisualLum()));
         visualLum.setTooltip(solarUnit);
 
-        Label bolometricLum = starInfosGrid.addInfo(1, 3, Target.BOLOMETRIC_LUM_LABEL.localizedProperty(), stars.getSelection(),
+        Label bolometricLum = starInfosGrid.addInfo(1, 3, localizedProperty("StarSelectionScreen.BOLOMETRIC_LUM_LABEL"), stars.getSelection(),
                 star -> String.format("%.4f", star.getBolometricLum()));
         bolometricLum.setTooltip(solarUnit);
 
-        starInfosGrid.addInfo(0, 4, Target.TEFF_LABEL.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(0, 4, localizedProperty("StarSelectionScreen.TEFF_LABEL"), stars.getSelection(),
                 star -> String.format("%.0f K", star.getTeff()));
 
-        Label radius = starInfosGrid.addInfo(1, 4, Target.RADIUS_LABEL.localizedProperty(), stars.getSelection(),
+        Label radius = starInfosGrid.addInfo(1, 4, localizedProperty("StarSelectionScreen.RADIUS_LABEL"), stars.getSelection(),
                 star -> String.format("%.3f", star.getRadius()));
         radius.setTooltip(solarUnit);
 
-        starInfosGrid.addInfo(0, 5, Target.NUM_KNOWN_PLANETS.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(0, 5, localizedProperty("StarSelectionScreen.NUM_KNOWN_PLANETS"), stars.getSelection(),
                 star -> String.format("%d", star.getKnownPlanets().size()));
 
-        starInfosGrid.addInfo(1, 5, Target.NUM_FOUND_PLANETS.localizedProperty(), stars.getSelection(),
+        starInfosGrid.addInfo(1, 5, localizedProperty("StarSelectionScreen.NUM_FOUND_PLANETS"), stars.getSelection(),
                 star -> {
                  if (star == null) {
                      return "";
@@ -171,7 +170,7 @@ public class StarSelectionScreen extends GridPane {
                  }
                 });
 
-        Label habitableLabel = starInfosGrid.addInfo(0, 6, Target.HABITABLE_PROBABILITY_LABEL.localizedProperty());
+        Label habitableLabel = starInfosGrid.addInfo(0, 6, localizedProperty("StarSelectionScreen.HABITABLE_PROBABILITY_LABEL"));
         GridPane.setHalignment(habitableLabel, HPos.RIGHT);
 
         starInfosGrid.addInfo(1, 6, new StringBinding() {
@@ -239,44 +238,13 @@ public class StarSelectionScreen extends GridPane {
         return system;
     }
 
+    public static ReadOnlyStringProperty localizedProperty(String name) {
+        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+    }
+
     @FunctionalInterface
     public interface Launch {
         void launch();
-    }
-
-    @Localized
-    private enum Target implements Localizable {
-        STAR_LIST_LABEL,
-        LAUNCH_PROBE_BUTTON,
-        LAUNCH_SHIP_BUTTON,
-        PROBES_LEFT,
-        DESCRIPTION,
-        SPECTRAL_LABEL,
-        DISTANCE_LABEL,
-        MAIN_SHIP_TRAVEL_LABEL,
-        MASS_LABEL,
-        HUMANITY_TRAVEL_LABEL,
-        HUMANITY_TRANSIT_SURVIVAL_LABEL,
-        VISUAL_LUM_LABEL,
-        BOLOMETRIC_LUM_LABEL,
-        TEFF_LABEL,
-        RADIUS_LABEL,
-        HABITABLE_PROBABILITY_LABEL,
-        NUM_KNOWN_PLANETS,
-        NUM_FOUND_PLANETS,
-        TOOLTIP_SOLAR_UNIT,
-        ;
-
-        private static final Localize<Target> local = new Localize<>(Target.class, "gui/starSelectionScreen.txt");
-
-        @Override
-        public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
-        }
-        @Override
-        public String toString() {
-            return local.getString(this).get();
-        }
     }
 
 }

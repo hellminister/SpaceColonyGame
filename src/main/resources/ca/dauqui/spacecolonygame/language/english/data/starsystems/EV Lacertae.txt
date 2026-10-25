@@ -1,2 +1,0 @@
-NAME EV Lacertae
-DESCRIPTION A temporary description for EV Lacertae

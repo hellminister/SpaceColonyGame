@@ -1,9 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gui.common.Utility;
-import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
-import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.IntegerBinding;
 import javafx.beans.binding.StringExpression;
@@ -25,6 +23,7 @@ import java.util.List;
 public class ShipCargoLoader extends VBox {
     private static final int MAXIMUM_WEIGHT = 100;
     private static final int MAXIMUM_COST = 100;
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
     private static final String SPINNER_CSS = ShipCargoLoader.class.getResource("spinner.css").toExternalForm();
     private final List<CargoItem> cargoItems;
     private final IntegerBinding remainingWeight;
@@ -73,7 +72,7 @@ public class ShipCargoLoader extends VBox {
             }
         };
 
-        Label shipLoadingTitle = Utility.createLabel(Target.SHIP_LOADING_TITLE.localizedProperty());
+        Label shipLoadingTitle = Utility.createLabel(localizedProperty("ShipCargoLoader.SHIP_LOADING_TITLE"));
 
 
         GridPane gridPane = fillGridPane();
@@ -82,8 +81,8 @@ public class ShipCargoLoader extends VBox {
         hBox.setAlignment(Pos.CENTER_LEFT);
         hBox.setPrefWidth(750);
 
-        Label weightLeft = Utility.createLabel(Bindings.concat(Target.REMAINING_WEIGHT_LABEL.localizedProperty(), " : "));
-        Label costLeft = Utility.createLabel(Bindings.concat(Target.REMAINING_COST_LABEL.localizedProperty(), " : "));
+        Label weightLeft = Utility.createLabel(Bindings.concat(localizedProperty("ShipCargoLoader.REMAINING_WEIGHT_LABEL"), " : "));
+        Label costLeft = Utility.createLabel(Bindings.concat(localizedProperty("ShipCargoLoader.REMAINING_COST_LABEL"), " : "));
 
 
         GridPane remains = new GridPane();
@@ -97,7 +96,7 @@ public class ShipCargoLoader extends VBox {
         remains.add(Utility.createLabel(StringExpression.stringExpression(remainingCost)), 1, 1);
 
         Button loadShipButton = new Button();
-        loadShipButton.textProperty().bind(Target.LOAD_SHIP_BUTTON.localizedProperty());
+        loadShipButton.textProperty().bind(localizedProperty("ShipCargoLoader.LOAD_SHIP_BUTTON"));
 
         loadShipButton.setOnAction(action);
 
@@ -126,12 +125,12 @@ public class ShipCargoLoader extends VBox {
 
         gridPane.getColumnConstraints().addAll(columnConstraints0, columnConstraints1, columnConstraints2, columnConstraints3);
 
-        Label cargoTitle = Utility.createLabel(Target.TITLE_CARGO.localizedProperty());
+        Label cargoTitle = Utility.createLabel(localizedProperty("ShipCargoLoader.TITLE_CARGO"));
         gridPane.add(cargoTitle, 0, 0);
         GridPane.setHalignment(cargoTitle, HPos.CENTER);
-        gridPane.add(Utility.createLabel(Target.TITLE_WEIGHT.localizedProperty()), 1, 0);
-        gridPane.add(Utility.createLabel(Target.TITLE_COST.localizedProperty()), 2, 0);
-        gridPane.add(Utility.createLabel(Target.TITLE_COUNT.localizedProperty()), 3, 0);
+        gridPane.add(Utility.createLabel(localizedProperty("ShipCargoLoader.TITLE_WEIGHT")), 1, 0);
+        gridPane.add(Utility.createLabel(localizedProperty("ShipCargoLoader.TITLE_COST")), 2, 0);
+        gridPane.add(Utility.createLabel(localizedProperty("ShipCargoLoader.TITLE_COUNT")), 3, 0);
 
         for (int i = 0; i < cargoItems.size(); i++) {
             int row = i+1;
@@ -193,28 +192,7 @@ public class ShipCargoLoader extends VBox {
     }
 
 
-    @Localized
-    private enum Target implements Localizable {
-        SHIP_LOADING_TITLE,
-        LOAD_SHIP_BUTTON,
-        REMAINING_WEIGHT_LABEL,
-        REMAINING_COST_LABEL,
-        TITLE_CARGO,
-        TITLE_WEIGHT,
-        TITLE_COST,
-        TITLE_COUNT,
-        ;
-
-        private static final Localize<Target> local = new Localize<>(Target.class, "gui/shipCargoLoaderTarget.txt");
-
-        @Override
-        public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
-        }
-
-        @Override
-        public String toString() {
-            return local.getString(this).get();
-        }
+    public static ReadOnlyStringProperty localizedProperty(String name) {
+        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }
 }

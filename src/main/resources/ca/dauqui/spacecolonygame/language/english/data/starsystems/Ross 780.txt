@@ -1,2 +1,0 @@
-NAME Ross 780
-DESCRIPTION A temporary description for Ross 780

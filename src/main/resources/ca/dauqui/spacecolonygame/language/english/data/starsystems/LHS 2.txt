@@ -1,2 +1,0 @@
-NAME LHS 2
-DESCRIPTION A temporary description for LHS 2

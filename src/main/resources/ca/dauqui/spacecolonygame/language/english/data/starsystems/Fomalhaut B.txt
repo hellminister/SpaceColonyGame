@@ -1,2 +1,0 @@
-NAME Fomalhaut B
-DESCRIPTION A temporary description for Fomalhaut B

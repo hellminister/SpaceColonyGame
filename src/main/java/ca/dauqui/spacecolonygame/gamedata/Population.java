@@ -90,15 +90,19 @@ public class Population {
             incompatible = EnumSet.noneOf(Tag.class);
         }
 
-        private static final Localize<Tag> local = new Localize<>(Tag.class, "data/populationTags.txt");
+        private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.enums";
 
         @Override
         public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
+            return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "PopulationTag." + name());
         }
         @Override
         public String toString() {
-            return local.getString(this).get();
+            return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "PopulationTag." + name()).get();
+        }
+
+        public boolean isCompatible(Tag tag) {
+            return !incompatible.contains(tag);
         }
     }
 

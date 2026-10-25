@@ -1,2 +1,0 @@
-NAME Procyon A
-DESCRIPTION A temporary description for Procyon A

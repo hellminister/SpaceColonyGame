@@ -1,2 +1,0 @@
-NAME Kruger 60 A
-DESCRIPTION A temporary description for Kruger 60 A

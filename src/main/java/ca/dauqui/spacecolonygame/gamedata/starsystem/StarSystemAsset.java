@@ -8,15 +8,16 @@ import java.util.*;
 
 
 public class StarSystemAsset {
-    private static final String STAR_SYSTEM_ASSET_LOCALIZE_PATH = "data/starsystems/";
-    private final Localize<Target> translatableStringValues;
+    private static final String STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.data.star_data";
     private final List<PlanetAsset> planetAssets;
     private final Map<StarDataColumn, String> data;
     private final Point3D coordinate;
 
+    private final ReadOnlyStringProperty name;
+    private final ReadOnlyStringProperty description;
+
 
     public StarSystemAsset(String[] dataStr){
-        translatableStringValues = new Localize<>(Target.class, STAR_SYSTEM_ASSET_LOCALIZE_PATH + dataStr[0].trim() + ".txt");
 
         var temp = new EnumMap<StarDataColumn, String>(StarDataColumn.class);
 
@@ -27,6 +28,11 @@ public class StarSystemAsset {
         temp.put(StarDataColumn.SPEC, temp.get(StarDataColumn.SPEC).replace(" ", "-"));
         data = Collections.unmodifiableMap(temp);
 
+        String prefix = data.get(StarDataColumn.NAME).replace(" ", "_") + ".";
+
+        name = Localize.getProperty(STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH,  prefix + "NAME");
+        description = Localize.getProperty(STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH,  prefix + "DESCRIPTION");
+
         coordinate = new Point3D(Double.parseDouble(data.get(StarDataColumn.X)), Double.parseDouble(data.get(StarDataColumn.Y)), Double.parseDouble(data.get(StarDataColumn.Z)));
 
         planetAssets = new LinkedList<>();
@@ -34,11 +40,11 @@ public class StarSystemAsset {
 
 
     public ReadOnlyStringProperty nameProperty() {
-        return translatableStringValues.getString(Target.NAME);
+        return name;
     }
 
     public ReadOnlyStringProperty descriptionProperty() {
-        return translatableStringValues.getString(Target.DESCRIPTION);
+        return description;
     }
 
     public double getDistance(){
@@ -115,10 +121,5 @@ public class StarSystemAsset {
 
     public List<PlanetAsset> getKnownPlanets() {
         return planetAssets;
-    }
-
-    public enum Target{
-        NAME,
-        DESCRIPTION,
     }
 }

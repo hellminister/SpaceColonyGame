@@ -1,2 +1,0 @@
-NAME EI Cancri A
-DESCRIPTION A temporary description for EI Cancri A

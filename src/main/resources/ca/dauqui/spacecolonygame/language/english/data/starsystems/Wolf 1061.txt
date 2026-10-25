@@ -1,2 +1,0 @@
-NAME Wolf 1061
-DESCRIPTION A temporary description for Wolf 1061

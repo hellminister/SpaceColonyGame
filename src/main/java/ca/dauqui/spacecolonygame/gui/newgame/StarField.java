@@ -1,9 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gui.common.Utility;
-import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
-import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -25,6 +23,7 @@ import java.util.List;
 
 public class StarField extends BorderPane {
     private static final double ANGLE_CHANGE = 5 * (Math.PI/180);
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
     public StarField(List<StarNode> stars) {
         setStyle("-fx-background-color: black;");
@@ -76,30 +75,30 @@ public class StarField extends BorderPane {
         Button x1 = matrixRotateNodeButton( ()-> {
             alf.set(alf.get()+ ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.ROLL_PLUS.localizedProperty());
+        }, localizedProperty("StarField.ROLL_PLUS"));
 
         Button x2 = matrixRotateNodeButton( () -> {
             alf.set(alf.get() - ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.ROLL_MINUS.localizedProperty());
+        }, localizedProperty("StarField.ROLL_MINUS"));
 
         Button y1 = matrixRotateNodeButton( () -> {
             bet.set(bet.get() + ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.PITCH_PLUS.localizedProperty());
+        }, localizedProperty("StarField.PITCH_PLUS"));
         Button y2 = matrixRotateNodeButton( () -> {
             bet.set(bet.get() - ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.PITCH_MINUS.localizedProperty());
+        }, localizedProperty("StarField.PITCH_MINUS"));
 
         Button z1 = matrixRotateNodeButton( () -> {
             gam.set(gam.get() + ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.YAW_PLUS.localizedProperty());
+        }, localizedProperty("StarField.YAW_PLUS"));
         Button z2 = matrixRotateNodeButton( () -> {
             gam.set(gam.get() - ANGLE_CHANGE);
             matrixRotateNode(content3D, alf.get(), bet.get(), gam.get());
-        }, Target.YAW_MINUS.localizedProperty());
+        }, localizedProperty("StarField.YAW_MINUS"));
 
         hBox.getChildren().addAll(x1, x2, y1, y2, z1, z2);
 
@@ -161,25 +160,7 @@ public class StarField extends BorderPane {
         void action();
     }
 
-    @Localized
-    private enum Target implements Localizable {
-        ROLL_PLUS,
-        ROLL_MINUS,
-        PITCH_PLUS,
-        PITCH_MINUS,
-        YAW_PLUS,
-        YAW_MINUS,
-        ;
-
-        private static final Localize<Target> local = new Localize<>(Target.class, "gui/starField.txt");
-
-        @Override
-        public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
-        }
-        @Override
-        public String toString() {
-            return local.getString(this).get();
-        }
+    public static ReadOnlyStringProperty localizedProperty(String name) {
+        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }
 }

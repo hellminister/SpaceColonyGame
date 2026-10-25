@@ -1,2 +1,0 @@
-NAME Proxima Centauri
-DESCRIPTION A temporary description for Proxima Centauri Writing more text to test the autowrap of the label, i hope this will work without problems also will try here a new line : \n this is a new line

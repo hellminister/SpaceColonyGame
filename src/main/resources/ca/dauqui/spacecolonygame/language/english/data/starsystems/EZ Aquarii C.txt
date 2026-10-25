@@ -1,2 +1,0 @@
-NAME EZ Aquarii C
-DESCRIPTION A temporary description for EZ Aquarii C

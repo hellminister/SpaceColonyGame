@@ -11,6 +11,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class MainWindow extends Application {
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
     private Stage primaryStage;
 
@@ -21,7 +22,6 @@ public class MainWindow extends Application {
     private Colony colony;
 
     public MainWindow() {
-        Localize.setLanguage("english");
         staticDataAssets = new StaticDataAssets();
         startScreen = new StartScreen(this);
         newGameScene = new NewGameScene(this);
@@ -45,7 +45,7 @@ public class MainWindow extends Application {
 
         primaryStage = stage;
 
-        primaryStage.setTitle("Hello!");
+        primaryStage.titleProperty().bind(Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "MainWindow.TITLE"));
         primaryStage.setMaxWidth(maxScreenWidth);
         primaryStage.setMaxHeight(maxScreenHeight);
         primaryStage.setScene(startScreen);

@@ -1,2 +1,0 @@
-NAME LHS 2090
-DESCRIPTION A temporary description for LHS 2090

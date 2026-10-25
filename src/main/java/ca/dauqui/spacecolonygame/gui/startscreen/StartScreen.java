@@ -3,9 +3,7 @@ package ca.dauqui.spacecolonygame.gui.startscreen;
 import ca.dauqui.spacecolonygame.gui.common.BackgroundImagePane;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
-import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
-import ca.dauqui.spacecolonygame.localization.Localized;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,6 +15,8 @@ import java.util.logging.Logger;
 
 public class StartScreen extends Scene {
     private static final Logger LOG = Logger.getLogger(StartScreen.class.getName());
+    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
+
     private final MainWindow mainWindow;
 
     public StartScreen(MainWindow mainWindow) {
@@ -37,12 +37,12 @@ public class StartScreen extends Scene {
         buttonBar.setAlignment(Pos.CENTER);
 
         Button newGameButton = new Button();
-        newGameButton.textProperty().bind(Target.NEW_GAME.localizedProperty());
+        newGameButton.textProperty().bind(localizedProperty("StartScreen.NEW_GAME"));
         newGameButton.setOnAction(_ -> mainWindow.switchToNewGameScene());
         Utility.setButtonStyle(newGameButton);
 
         Button loadGameButton = new Button();
-        loadGameButton.textProperty().bind(Target.LOAD_GAME.localizedProperty());
+        loadGameButton.textProperty().bind(localizedProperty("StartScreen.LOAD_GAME"));
         Utility.setButtonStyle(loadGameButton);
 
         buttonBar.getChildren().addAll(newGameButton, loadGameButton);
@@ -50,22 +50,8 @@ public class StartScreen extends Scene {
     }
 
 
-    @Localized
-    private enum Target implements Localizable {
-        NEW_GAME,
-        LOAD_GAME,
-        ;
-
-        private static final Localize<Target> local = new Localize<>(Target.class, "gui/startScreenTarget.txt");
-
-        @Override
-        public ReadOnlyStringProperty localizedProperty() {
-            return local.getString(this);
-        }
-        @Override
-        public String toString() {
-            return local.getString(this).get();
-        }
+    public static ReadOnlyStringProperty localizedProperty(String name) {
+        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }
 
 

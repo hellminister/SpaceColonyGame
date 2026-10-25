@@ -1,2 +1,0 @@
-NEW_GAME New Game
-LOAD_GAME Load Game

@@ -1,2 +1,0 @@
-NAME TZ Arietis
-DESCRIPTION A temporary description for TZ Arietis

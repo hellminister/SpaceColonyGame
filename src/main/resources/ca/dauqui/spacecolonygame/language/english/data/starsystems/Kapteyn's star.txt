@@ -1,2 +1,0 @@
-NAME Kapteyn's star
-DESCRIPTION A temporary description for Kapteyn's star

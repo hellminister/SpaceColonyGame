@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -21,7 +20,7 @@ import java.util.logging.StreamHandler;
 public class LocalisationTextStarGenerator {
     private static final Logger LOG = Logger.getLogger(LocalisationTextStarGenerator.class.getName());
 
-    private static final String STAR_LOCALISATION_PATH = "src/main/resources/ca/dauqui/spacecolonygame/language/english/data/starsystems/";
+    private static final String STAR_LOCALISATION_PATH = "src/main/resources/ca/dauqui/spacecolonygame/localization/data/";
     private static final String STAR_DATA_PATH = "src/main/resources/ca/dauqui/spacecolonygame/data/starsystems/";
     private static final  double MAX_DISTANCE = 25.0;
 
@@ -46,8 +45,21 @@ public class LocalisationTextStarGenerator {
 
 
         Path path = new File(STAR_DATA_PATH + "StarData.txt").toPath();
+        try {
+            Path file = Files.createFile(new File(STAR_LOCALISATION_PATH + "star_data_en.properties").toPath());
+
+            createFile(path, file);
+        } catch (FileAlreadyExistsException _) {
+            LOG.warning(() -> "localization file already exists");
+        } catch (IOException e){
+            LOG.severe(e::getLocalizedMessage);
+        }
+    }
+
+    private static void createFile(Path path, Path file) {
         String line = "";
-        try (BufferedReader br = Files.newBufferedReader(path)) {
+        try (BufferedReader br = Files.newBufferedReader(path);
+             BufferedWriter bw = Files.newBufferedWriter(file)) {
             line = br.readLine();
 
             while (line != null) {
@@ -63,8 +75,12 @@ public class LocalisationTextStarGenerator {
                     String name = text[StarDataColumn.NAME.ordinal()].trim();
                     switch (type) {
                         case "S":
-                            generateFile(name);
-
+                            String prefix = name.replace(" ", "_") + ".";
+                            bw.write("# String data for " + name + "\n\n");
+                            bw.write(prefix + "NAME " + name + "\n");
+                            bw.write(prefix + "DESCRIPTION A temporary description for " + name + "\n");
+                            bw.write("\n");
+                            bw.flush();
                             break;
                         case "PJ", "PN", "PT":
                             LOG.info(() -> "Skipping " + name + " of planet type " + type);
@@ -82,23 +98,6 @@ public class LocalisationTextStarGenerator {
         } catch (Exception _) {
             String finalLine = line;
             LOG.warning(() -> "tries to do something with " + finalLine);
-        }
-    }
-
-    private static void generateFile(String name) {
-        try {
-            Path file = Files.createFile(new File(STAR_LOCALISATION_PATH + name + ".txt").toPath());
-            try (BufferedWriter bw = Files.newBufferedWriter(file, StandardOpenOption.TRUNCATE_EXISTING)) {
-                bw.write("NAME " + name + "\n");
-                bw.write("DESCRIPTION A temporary description for " + name + "\n");
-                bw.flush();
-            } catch (IOException ex) {
-                LOG.severe(() -> "Error while writing for " + name + "\n" + ex.getMessage());
-            }
-        } catch (FileAlreadyExistsException _) {
-            LOG.warning(() -> name + " already has a file for it");
-        } catch (IOException e){
-            LOG.severe(e::getLocalizedMessage);
         }
     }
 }

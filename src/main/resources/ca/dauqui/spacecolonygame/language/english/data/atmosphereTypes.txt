@@ -1,5 +1,0 @@
-NONE No atmosphere
-CARBON_DIOXIDE Carbon dioxide
-NITROGEN Nitrogen
-HYDROGEN_HELIUM Hydrogen and Helium
-METHANE_AMMONIA Methane and Ammonia

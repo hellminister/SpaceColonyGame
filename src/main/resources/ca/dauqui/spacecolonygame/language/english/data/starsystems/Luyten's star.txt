@@ -1,2 +1,0 @@
-NAME Luyten's star
-DESCRIPTION A temporary description for Luyten's star

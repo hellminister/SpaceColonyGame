@@ -1,2 +1,0 @@
-NAME Delta Pavonis
-DESCRIPTION A temporary description for Delta Pavonis

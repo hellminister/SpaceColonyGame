@@ -1,2 +1,0 @@
-NAME Wolf 922
-DESCRIPTION A temporary description for Wolf 922

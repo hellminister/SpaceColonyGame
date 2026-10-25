@@ -1,2 +1,0 @@
-NAME Tau Ceti
-DESCRIPTION A temporary description for Tau Ceti

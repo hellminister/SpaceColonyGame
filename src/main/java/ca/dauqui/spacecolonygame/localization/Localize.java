@@ -1,187 +1,52 @@
 package ca.dauqui.spacecolonygame.localization;
 
-import ca.dauqui.spacecolonygame.util.PathProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.WeakChangeListener;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
+import java.util.ResourceBundle;
 
-/**
- * This class is used to Localize strings and to permit change of language without having to restart the class
- * It needs to be linked to an enum that will provide a link to the localized string
- * <p>
- * It can also be used as stand alone using the constructor asking the language as parameter
- * it will also transform all \n found in the text by a line return
- * @param <T> the enum used as labels for the localized strings
- */
-public class Localize<T extends Enum<T>> {
-    private static final Logger LOG = Logger.getLogger(Localize.class.getName());
+public final class Localize {
+    private static final Map<String, Map<String, StringProperty>> localizedStrings = new HashMap<>();
 
-    private static final String LOCALIZATION_FOLDER_PATH = "src/main/resources/ca/dauqui/spacecolonygame/language/";
-    /**
-     * Contains the language to load
-     * It is static so that when you change this value, all instance of this class updates to the new language
-     * also keeping it to know which language the class is set for
-     */
-    private static final StringProperty language = new SimpleStringProperty("");
-    private static final PathProperty localizationFolder = new PathProperty();
-
-    /**
-     * Sets the language to use, affects all instance of this class
-     * @param language the language to use
-     */
-    public static void setLanguage(String language){
-        // order here is important, we want to set the path to use before triggering the updates from the listener
-        localizationFolder.set(Paths.get(LOCALIZATION_FOLDER_PATH, language));
-        Localize.language.set(language);
+    static {
+        Locale.setDefault(Locale.ENGLISH);
     }
 
-    private final Map<T, StringProperty> localizedStrings;
+    private Localize() {}
 
-    private final Class<T> enumType;
+    public static void updateLanguage(String languageCode) {
+        Locale.setDefault(Locale.forLanguageTag(languageCode));
 
-    // the name of the file containing the localized strings
-    private final String localizeFor;
+        // On parcourt chaque fichier enregistré
+        for (Map.Entry<String, Map<String, StringProperty>> bundleEntry : localizedStrings.entrySet()) {
+            String bundleName = bundleEntry.getKey();
+            ResourceBundle bundle = ResourceBundle.getBundle(bundleName);
 
-    // the language of this localization
-    private final String localLanguage;
-
-    // Référence forte conservée au niveau de l'instance pour éviter
-    // que l'écouteur soit nettoyé prématurément par le Garbage Collector
-    private final ChangeListener<String> languageListener;
-
-    /**
-     * Use this constructor to have the localization follow the setLanguage static function
-     * @param enumType the enum type used to represent the localized strings
-     * @param localizeFor the name of the file containing the localized strings
-     */
-    public Localize(Class<T> enumType, String localizeFor) {
-        this.enumType = enumType;
-        this.localizeFor = localizeFor;
-        localLanguage = "";
-        EnumMap<T, StringProperty> temp = new EnumMap<>(enumType);
-        Arrays.stream(enumType.getEnumConstants()).forEach(target -> temp.put(target, new SimpleStringProperty(target.name() + " not defined")));
-
-        localizedStrings = Collections.unmodifiableMap(temp);
-
-        // adding a listener to language so that this instance updates itself when the language changes
-        // using a weak reference to make this object collectable
-        this.languageListener = (_, oldV, newV) -> {
-            if (!oldV.equalsIgnoreCase(newV) && !newV.isBlank()) {
-                loadLanguage();
-            }
-        };
-
-        language.addListener(new WeakChangeListener<>(this.languageListener));
-
-        // loading the localization file if a language is set
-        if (!language.get().isBlank()){
-            loadLanguage();
-        }
-    }
-
-    /**
-     * Use this constructor to have a localization unlinked to the static language
-     * @param enumType the enum type used to represent the localized strings
-     * @param localizeFor the name of the file containing the localized strings
-     * @param language the language to use for this instance
-     */
-    public Localize(Class<T> enumType, String localizeFor, String language) {
-        this.enumType = enumType;
-        this.localizeFor = localizeFor;
-        this.localLanguage = language;
-        this.languageListener = null; // not used when it is uncoupled from the global language
-        EnumMap<T, StringProperty> temp = new EnumMap<>(enumType);
-        Arrays.stream(enumType.getEnumConstants()).forEach(target -> temp.put(target, new SimpleStringProperty(target.name() + " not defined")));
-
-        localizedStrings = Collections.unmodifiableMap(temp);
-        try {
-            Path path = (Paths.get(LOCALIZATION_FOLDER_PATH, language, localizeFor));
-            load(path);
-        } catch (InvalidPathException _){
-            LOG.severe(() -> "Error finding localization file : " + LOCALIZATION_FOLDER_PATH + " " + language + " " + localizeFor);
-        }
-    }
-
-    public static String getLanguage() {
-        return language.get();
-    }
-
-    /**
-     *
-     * @return the language used by this instance or blank ("") if it is linked to the static language value
-     */
-    public String getLocalLanguage(){
-        return localLanguage;
-    }
-
-    /**
-     * @param target the wanted String name
-     * @return the wanted String Property
-     */
-    public ReadOnlyStringProperty getString(T target){
-        return localizedStrings.get(target);
-    }
-
-    private void loadLanguage() {
-        try {
-            Path path = localizationFolder.get().resolve(localizeFor);
-            load(path);
-        } catch (InvalidPathException _){
-            LOG.severe(() -> "Error finding localization file : " + localizationFolder + " " + localizeFor);
-        }
-    }
-
-    private void load(Path path) {
-        Set<T> notLoaded = new HashSet<>(localizedStrings.keySet());
-        String line = "";
-        try (BufferedReader br = Files.newBufferedReader(path)) {
-            line = br.readLine();
-
-            while (line != null) {
-                if (!line.isBlank() && !line.startsWith("#")) {
-                    String[] text = line.split(" ", 2);
-
-                    loadTargetAndText(text, notLoaded);
+            // On met à jour chaque propriété de ce fichier
+            for (Map.Entry<String, StringProperty> propertyEntry : bundleEntry.getValue().entrySet()) {
+                String key = propertyEntry.getKey();
+                if (bundle.containsKey(key)) {
+                    propertyEntry.getValue().set(bundle.getString(key));
                 }
-
-                line = br.readLine();
             }
-
-        } catch (IOException _) {
-            LOG.severe(() -> "Error loading localization file : " + path);
-        } catch (Exception _) {
-            String finalLine = line;
-            LOG.warning(() -> "tries to do something with " + finalLine);
-        }
-
-        if (!notLoaded.isEmpty()) {
-            LOG.severe(() -> "Missing localization of these entries : " + notLoaded);
         }
     }
 
-    private void loadTargetAndText(String[] text, Set<T> notLoaded) {
-        try {
-            T key = T.valueOf(enumType, text[0]);
-            localizedStrings.get(key).setValue(text[1].replace("\\n", "\n"));
-            notLoaded.remove(key);
-        } catch(IllegalArgumentException _) {
-            LOG.severe(() -> "Target value not found " + text[0] + ".");
-        }
+
+    public static ReadOnlyStringProperty getProperty(String bundleName, String key) {
+        // 1. On récupère ou crée la sous-map pour ce fichier spécifique
+        Map<String, StringProperty> fileMap = localizedStrings.computeIfAbsent(bundleName, k -> new HashMap<>());
+
+        // 2. On récupère ou crée la StringProperty pour cette clé précise
+        return fileMap.computeIfAbsent(key, k -> {
+            ResourceBundle bundle = ResourceBundle.getBundle(bundleName);
+            String initialValue = bundle.containsKey(k) ? bundle.getString(k) : k + " not defined";
+            return new SimpleStringProperty(initialValue);
+        });
     }
+
 }

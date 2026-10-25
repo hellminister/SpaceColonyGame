@@ -1,2 +1,0 @@
-NAME AD Leonis
-DESCRIPTION A temporary description for AD Leonis

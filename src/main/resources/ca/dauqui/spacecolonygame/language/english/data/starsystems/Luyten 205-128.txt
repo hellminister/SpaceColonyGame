@@ -1,2 +1,0 @@
-NAME Luyten 205-128
-DESCRIPTION A temporary description for Luyten 205-128
