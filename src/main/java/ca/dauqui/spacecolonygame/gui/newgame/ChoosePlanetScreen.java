@@ -8,6 +8,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -105,7 +106,13 @@ public class ChoosePlanetScreen extends VBox {
 
         GridPane infoGrid = createInfoGrid();
 
-        getChildren().addAll(planetView, infoGrid);
+        Button nextButton = new Button();
+        Utility.setButtonStyle(nextButton);
+        nextButton.textProperty().bind(Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "ChoosePlanetScreen.nextButton"));
+        nextButton.disableProperty().bind(selectedPlanet.isNull());
+
+
+        getChildren().addAll(planetView, infoGrid, nextButton);
     }
 
     private InfoGrid<PlanetNode> createInfoGrid() {
