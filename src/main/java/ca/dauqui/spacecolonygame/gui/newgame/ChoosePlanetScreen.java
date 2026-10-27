@@ -112,7 +112,7 @@ public class ChoosePlanetScreen extends VBox {
         nextButton.disableProperty().bind(selectedPlanet.isNull());
 
 
-        getChildren().addAll(planetView, infoGrid, nextButton);
+        getChildren().addAll(planetView, infoGrid/*, nextButton*/);
     }
 
     private InfoGrid<PlanetNode> createInfoGrid() {
@@ -145,8 +145,10 @@ public class ChoosePlanetScreen extends VBox {
                 planet -> planet.getPlanet().getAtmosphericPressure() + " " + localizedProperty("ChoosePlanetScreen.PRESSURE_UNIT").get());
         infoGrid.addInfo(1, 3, localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet, planet -> planet.getPlanet().getMainAtmosphereGaz().toString());
         infoGrid.addInfo(0, 4, localizedProperty("ChoosePlanetScreen.TECTONIC_TYPE"), selectedPlanet, planet -> planet.getPlanet().getTectonic().toString());
-        infoGrid.addInfo(1, 4, localizedProperty("ChoosePlanetScreen.VOLCANISM_LEVEL"), selectedPlanet, planet -> planet.getPlanet().getVolcanism().toString());
-        infoGrid.addInfo(0, 5, localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_STRENGTH"), selectedPlanet, planet -> planet.getPlanet().getMagneticField().toString());
+        infoGrid.addInfo(1, 4, localizedProperty("ChoosePlanetScreen.VOLCANISM_LEVEL"), selectedPlanet, planet -> String.format("%.2f %s",planet.getPlanet().getVolcanism(),
+                localizedProperty("ChoosePlanetScreen.VOLCANISM_UNIT").get()));
+        infoGrid.addInfo(0, 5, localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_STRENGTH"), selectedPlanet, planet -> String.format("%.2f %s",planet.getPlanet().getMagneticField(),
+                localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_UNIT").get()));
         infoGrid.addInfo(1, 5, localizedProperty("ChoosePlanetScreen.ALBEDO"), selectedPlanet, planet -> String.format(Locale.getDefault(), "%.0f %%",
                 planet.getPlanet().getAlbedo() * 100));
         infoGrid.addInfo(0, 6, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS"), selectedPlanet,

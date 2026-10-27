@@ -4,7 +4,7 @@ public enum TerrainType {
     EASY,
     NORMAL,
     HARD,
-    IMPASSIBLE,
+    IMPASSABLE,
     CLEARED,
     WATER,
     ;

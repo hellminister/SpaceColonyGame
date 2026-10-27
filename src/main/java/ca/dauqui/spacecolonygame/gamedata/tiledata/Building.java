@@ -1,12 +1,13 @@
 package ca.dauqui.spacecolonygame.gamedata.tiledata;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Building extends TileData {
     private int unused;
-    private final EnumMap<ResourceType, Integer> resourcesToBuild;
-    private final EnumMap<ResourceType, Integer> resourcesToOperate;
+    private final Map<ResourceType, Integer> resourcesToBuild;
+    private final Map<ResourceType, Integer> resourcesToOperate;
     private int remainingBuildTime;
     private int remainingLifeTime;
     private List<PopulationSlot> populationToBuild;
@@ -14,7 +15,7 @@ public class Building extends TileData {
 
 
     public Building() {
-        this.resourcesToBuild = new EnumMap<>(ResourceType.class);
-        this.resourcesToOperate = new EnumMap<>(ResourceType.class);
+        this.resourcesToBuild = new HashMap<>();
+        this.resourcesToOperate = new HashMap<>();
     }
 }

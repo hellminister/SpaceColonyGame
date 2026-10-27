@@ -20,8 +20,8 @@ public class Planet {
     // Caractéristiques physiques localisables fortement typées
     private final AtmosphereComposition atmosphereComposition;
     private final TectonicType tectonic;
-    private final VolcanismLevel volcanism;
-    private final MagneticFieldStrength magneticField;
+    private final double volcanism;
+    private final double magneticField;
 
     @SuppressWarnings("java:S107")
     public Planet(String type, double radius, String radiusUnit, double mass, double gravity,
@@ -29,7 +29,7 @@ public class Planet {
                   double albedo, double orbitalPeriodDays, double rotationPeriodHours,
                   double axisTilt, boolean isTidallyLocked,
                   AtmosphereComposition atmosphereComposition, TectonicType tectonic,
-                  VolcanismLevel volcanism, MagneticFieldStrength magneticField) {
+                  double volcanism, double magneticField) {
         this.type = type;
         this.radius = radius;
         this.radiusUnit = radiusUnit;
@@ -84,11 +84,11 @@ public class Planet {
         return tectonic;
     }
 
-    public VolcanismLevel getVolcanism() {
+    public double getVolcanism() {
         return volcanism;
     }
 
-    public MagneticFieldStrength getMagneticField() {
+    public double getMagneticField() {
         return magneticField;
     }
 
