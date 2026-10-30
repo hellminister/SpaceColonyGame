@@ -4,11 +4,11 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
-public abstract sealed class CargoItem permits RessourceItem, BuildingItem, SatelliteItem  {
-    private int weight;
-    private int cost;
-    private IntegerProperty currentCount;
-    private int startingCount;
+public abstract sealed class CargoItem permits ResourceItem, BuildingItem, SatelliteItem  {
+    private final int weight;
+    private final int cost;
+    private final IntegerProperty currentCount;
+    private final int startingCount;
 
     protected CargoItem(int weight, int cost, int startingCount) {
         this.weight = weight;

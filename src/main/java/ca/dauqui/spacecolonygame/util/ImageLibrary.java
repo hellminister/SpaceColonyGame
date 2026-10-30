@@ -6,14 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
  * This class serves as an image library so an image is loaded only once
  */
-@SuppressWarnings("java:S6548")
 public enum ImageLibrary {
     IMAGE_LIBRARY;
 
@@ -23,10 +20,10 @@ public enum ImageLibrary {
 
 
     // stores the Images from the common resources folder
-    private final Map<String, Image> theLibrary;
+    private final SoftMapCache<String, Image> theLibrary;
 
     ImageLibrary() {
-        theLibrary = new ConcurrentHashMap<>();
+        theLibrary = new SoftMapCache<>();
     }
 
     /**

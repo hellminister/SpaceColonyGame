@@ -16,6 +16,8 @@ public class Planet {
     private final double rotationPeriodHours; // Rotation (Durée du jour)
     private final double axisTilt;           // Inclinaison de l'axe
     private final boolean isTidallyLocked;   // Verrouillage gravitationnel
+    private final double receivedLight;
+    private final int numberOfSites;
 
     // Caractéristiques physiques localisables fortement typées
     private final AtmosphereComposition atmosphereComposition;
@@ -29,7 +31,7 @@ public class Planet {
                   double albedo, double orbitalPeriodDays, double rotationPeriodHours,
                   double axisTilt, boolean isTidallyLocked,
                   AtmosphereComposition atmosphereComposition, TectonicType tectonic,
-                  double volcanism, double magneticField) {
+                  double volcanism, double magneticField, double receivedLight, int numberOfSites) {
         this.type = type;
         this.radius = radius;
         this.radiusUnit = radiusUnit;
@@ -44,6 +46,8 @@ public class Planet {
         this.rotationPeriodHours = rotationPeriodHours;
         this.axisTilt = axisTilt;
         this.isTidallyLocked = isTidallyLocked;
+        this.receivedLight = receivedLight;
+        this.numberOfSites = numberOfSites;
 
         this.atmosphereComposition = atmosphereComposition;
         this.tectonic = tectonic;
@@ -100,9 +104,31 @@ public class Planet {
         return atmosphericPressure;
     }
 
-    public double getAlbedo() { return albedo; }
-    public double getOrbitalPeriodDays() { return orbitalPeriodDays; }
-    public double getRotationPeriodHours() { return rotationPeriodHours; }
-    public double getAxisTilt() { return axisTilt; }
-    public boolean isTidallyLocked() { return isTidallyLocked; }
+    public double getAlbedo() {
+        return albedo;
+    }
+
+    public double getOrbitalPeriodDays() {
+        return orbitalPeriodDays;
+    }
+
+    public double getRotationPeriodHours() {
+        return rotationPeriodHours;
+    }
+
+    public double getAxisTilt() {
+        return axisTilt;
+    }
+
+    public boolean isTidallyLocked() {
+        return isTidallyLocked;
+    }
+
+    public double getReceivedLight() {
+        return receivedLight;
+    }
+
+    public int getNumberOfSites() {
+        return numberOfSites;
+    }
 }

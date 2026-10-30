@@ -7,6 +7,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 public final class Utility {
+    private static final String OUTPOST_BUTTON_CSS_PATH = Utility.class.getResource("outpostbutton.css").toExternalForm();
     private Utility(){}
 
     public static Label createLabel(StringExpression text) {
@@ -29,6 +30,11 @@ public final class Utility {
                  -fx-border-color: lime;\
                  -fx-border-width: 1px;""");
 
+    }
+
+    public static void applyOutpostSquareButtonStyle(Button button) {
+        button.getStylesheets().add(OUTPOST_BUTTON_CSS_PATH);
+        button.getStyleClass().add("outpost-button");
     }
 
     public static Color getStarColor(double temp) {

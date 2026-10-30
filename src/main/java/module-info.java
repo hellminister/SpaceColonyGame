@@ -1,6 +1,7 @@
 module ca.dauqui.spacecolonygame {
     requires javafx.controls;
     requires javafx.fxml;
+    requires javafx.media;
     requires java.logging;
     requires java.management;
     requires java.naming;

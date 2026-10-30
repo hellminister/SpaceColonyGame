@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/* TODO create and immutable version of this to serve as a blueprint */
 public class Building extends TileData {
     private int unused;
     private final Map<ResourceType, Integer> resourcesToBuild;

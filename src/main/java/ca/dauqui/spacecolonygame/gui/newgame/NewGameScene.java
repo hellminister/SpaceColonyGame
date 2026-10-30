@@ -1,5 +1,6 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
+import ca.dauqui.spacecolonygame.gamedata.starsystem.Planet;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.BackgroundImagePane;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
@@ -28,9 +29,10 @@ public class NewGameScene extends Scene {
     private final Node aiName;
     private final StarSelectionScreen starSelection;
     private final Node shipLoading;
-    private final Node shipTakeOff;
+    private final ShipLaunchScreen shipTakeOff;
     private ShipCargoLoader cargoLoader;
     private final ChoosePlanetScreen choosePlanet;
+    private final Node siteChooser;
 
 
     public NewGameScene(MainWindow mainWindow) {
@@ -54,8 +56,9 @@ public class NewGameScene extends Scene {
         shipLoading = createShipLoading();
         shipTakeOff = createShipTakeoff();
         choosePlanet = createChoosePlanet();
+        siteChooser = createSiteChooser();
 
-        root.getChildren().addAll(readStory, commanderName, aiName, starSelection, shipLoading, shipTakeOff, choosePlanet);
+        root.getChildren().addAll(readStory, commanderName, aiName, starSelection, shipLoading, shipTakeOff, choosePlanet, siteChooser);
 
         readStory.setVisible(true);
         commanderName.setVisible(false);
@@ -65,8 +68,11 @@ public class NewGameScene extends Scene {
         starSelection.setPreselection(true);
         shipTakeOff.setVisible(false);
         choosePlanet.setVisible(false);
+        siteChooser.setVisible(false);
 
     }
+
+
 
     private Node createReadStory() {
         VBox root = new VBox();
@@ -185,6 +191,7 @@ public class NewGameScene extends Scene {
         }, () -> {
             starSelection.setVisible(false);
             shipTakeOff.setVisible(true);
+            shipTakeOff.reset(mainWindow.getColony());
         });
     }
 
@@ -212,6 +219,7 @@ public class NewGameScene extends Scene {
             starSelection.setVisible(true);
             starSelection.setPreselection(false);
             starSelection.generateProbedStarSystems();
+            cargoLoader.loadCargoInShip(mainWindow.getColony());
         });
 
         StackPane pane = new StackPane();
@@ -232,28 +240,29 @@ public class NewGameScene extends Scene {
         return root;
     }
 
-    private Node createShipTakeoff() {
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: black");
-
-        Button takeoffButton = new Button();
-        takeoffButton.textProperty().bind(localizedProperty("NewGameScene.TAKEOFF_NEXT"));
-        takeoffButton.setOnAction(_ -> {
+    private ShipLaunchScreen createShipTakeoff() {
+        return new ShipLaunchScreen(_ -> {
             shipTakeOff.setVisible(false);
             choosePlanet.setVisible(true);
             StarSystem selected = starSelection.getGeneratedChosenStarSystem();
             choosePlanet.setSystem(selected);
+            choosePlanet.setActiveProbeAndSatelliteEffects(shipTakeOff.getActiveProbeAndSatelliteEffects());
             mainWindow.getColony().setStarSystem(selected);
         });
-
-        root.getChildren().add(takeoffButton);
-        return root;
     }
 
     private ChoosePlanetScreen createChoosePlanet() {
-        var root = new ChoosePlanetScreen();
+        return new ChoosePlanetScreen(_ ->{
+            choosePlanet.setVisible(false);
+            siteChooser.setVisible(true);
+            Planet selectedPlanet = choosePlanet.getPlanet();
+            // siteChooser.setPlanet(selectedPlanet);
+            mainWindow.getColony().setPlanet(selectedPlanet);
+        });
+    }
 
-        return root;
+    private Node createSiteChooser() {
+        return new StackPane();
     }
 
 
@@ -266,6 +275,8 @@ public class NewGameScene extends Scene {
         shipLoading.setVisible(false);
         shipTakeOff.setVisible(false);
         choosePlanet.setVisible(false);
+        choosePlanet.setSystem(null);
+        siteChooser.setVisible(false);
     }
 
     public void startNewGame() {

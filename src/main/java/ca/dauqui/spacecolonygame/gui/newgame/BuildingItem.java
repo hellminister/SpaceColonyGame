@@ -16,7 +16,6 @@ public final class BuildingItem extends CargoItem {
         return building;
     }
 
-
     @Override
     public ReadOnlyStringProperty nameProperty() {
         return new SimpleStringProperty("name");

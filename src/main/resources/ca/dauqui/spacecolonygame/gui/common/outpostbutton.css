@@ -1,0 +1,84 @@
+.outpost-button {
+    /* Nettoyage des styles JavaFX */
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+
+    /* Dimensions strictes pixel-art */
+    -fx-pref-width: 32px;
+    -fx-pref-height: 32px;
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+
+    /* APPLICATION DES 5 COUCHES CONCENTRIQUES AVEC COULEURS REHAUSSÉES */
+    -fx-background-color:
+        /* COUCHE 1 : Biseau Extérieur (Orange plus prononcé et saturé, ombré en terre cuite) */
+            linear-gradient(from 0% 0% to 100% 100%, #ffbe73 0%, #ffbe73 50%, #ad6221 50%, #ad6221 100%),
+
+                /* COUCHE 2 : Cadre Orange Brillant */
+            #e6852e,
+
+                /* COUCHE 3 : Cadre de transition Brun Sombre */
+            #3b2f18,
+
+                /* COUCHE 4 : Puits Vert (Haut/Gauche sombre, Bas/Droite vert prairie) */
+            linear-gradient(from 0% 0% to 100% 100%, #005500 0%, #005500 50%, #00cc00 50%, #00cc00 100%),
+
+                /* COUCHE 5 : Le Voyant Central Jaune Fluo */
+            #e5ffa1;
+
+    /* ÉPAISSEUR DES CADRES AU PIXEL PRÈS */
+    -fx-background-insets:
+            0px,              /* Couche 1 : Cadre extérieur */
+            3px,              /* Couche 2 : Biseau orange */
+            6px,              /* Couche 3 : Encadrement brun */
+            9px,              /* Couche 4 : Puits vert */
+            13px;             /* Couche 5 : Carré jaune central */
+}
+
+/* --- EFFET AU SURVOL (HOVER) --- */
+.outpost-button:hover {
+    -fx-background-color:
+            linear-gradient(from 0% 0% to 100% 100%, #ffcb8c 0%, #ffcb8c 50%, #c4722b 50%, #c4722b 100%),
+            #f59640,
+            #4f4021,
+            linear-gradient(from 0% 0% to 100% 100%, #007700 0%, #007700 50%, #00ff00 50%, #00ff00 100%),
+            #f2ffd4;
+    -fx-background-insets: 0px, 3px, 6px, 9px, 13px;
+}
+
+/* --- EFFET AU CLIC (PRESSED : INVERSION DES GRADIENTS POUR L'ENFONCEMENT) --- */
+.outpost-button:pressed {
+    -fx-background-color:
+        /* Inversion Couche 1 : Le sombre passe en haut/gauche pour simuler l'ombre du creux */
+            linear-gradient(from 0% 0% to 100% 100%, #ad6221 0%, #ad6221 50%, #ffbe73 50%, #ffbe73 100%),
+
+            #b85e14, /* Orange plus sombre */
+            #241d0f,
+
+                /* Inversion Couche 4 : Le vert clair passe en haut/gauche */
+            linear-gradient(from 0% 0% to 100% 100%, #00cc00 0%, #00cc00 50%, #005500 50%, #005500 100%),
+
+            #ccf279; /* Le voyant s'enfonce légèrement */
+
+    /* Léger décalage des insets vers le bas/droite pour parfaire l'illusion mécanique */
+    -fx-background-insets:
+            0px,
+            4px 2px 2px 4px,
+            7px 5px 5px 7px,
+            10px 8px 8px 10px,
+            14px 12px 12px 14px;
+}
+
+/* --- ÉTAT INACTIF / BROUILLARD DE GUERRE (DISABLED) --- */
+.outpost-button:disabled {
+    -fx-opacity: 1.0;
+
+    -fx-background-color:
+            linear-gradient(from 0% 0% to 100% 100%, #8c7643 0%, #8c7643 50%, #4a3e21 50%, #4a3e21 100%),
+            #5a4e31,
+            #2a2415,
+            linear-gradient(from 0% 0% to 100% 100%, #153315 0%, #153315 50%, #225522 50%, #225522 100%),
+            #4a5431;
+    -fx-background-insets: 0px, 3px, 6px, 9px, 13px;
+}

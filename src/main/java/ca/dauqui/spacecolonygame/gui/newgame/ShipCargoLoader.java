@@ -1,5 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
+import ca.dauqui.spacecolonygame.gamedata.CargoMarket;
+import ca.dauqui.spacecolonygame.gamedata.Colony;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import javafx.beans.binding.Bindings;
@@ -21,17 +23,20 @@ import java.util.List;
 
 
 public class ShipCargoLoader extends VBox {
-    private static final int MAXIMUM_WEIGHT = 100;
-    private static final int MAXIMUM_COST = 100;
+
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
     private static final String SPINNER_CSS = ShipCargoLoader.class.getResource("spinner.css").toExternalForm();
     private final List<CargoItem> cargoItems;
     private final IntegerBinding remainingWeight;
     private final IntegerBinding remainingCost;
-
+    private final int maximumWeight;
+    private final int startingMoney;
 
     public ShipCargoLoader(EventHandler<ActionEvent> action) {
         super();
+
+        maximumWeight = CargoMarket.getMaxWeight();
+        startingMoney = CargoMarket.getInitialMoney();
 
         setMaxWidth(750);
         maxHeightProperty().bind(widthProperty().multiply(4.0/3));
@@ -47,7 +52,7 @@ public class ShipCargoLoader extends VBox {
 
             @Override
             protected int computeValue() {
-                int remaining = MAXIMUM_WEIGHT;
+                int remaining = maximumWeight;
                 for (CargoItem cargoItem : cargoItems) {
                     remaining -= cargoItem.getWeight() * cargoItem.getCurrentCount().get();
                 }
@@ -64,7 +69,7 @@ public class ShipCargoLoader extends VBox {
 
             @Override
             protected int computeValue() {
-                int remaining = MAXIMUM_COST;
+                int remaining = startingMoney;
                 for (CargoItem cargoItem : cargoItems) {
                     remaining -= cargoItem.getCost() * cargoItem.getCurrentCount().get();
                 }
@@ -177,10 +182,23 @@ public class ShipCargoLoader extends VBox {
         return gridPane;
     }
 
+    public void loadCargoInShip(Colony colony) {
+        for (CargoItem cargoItem : cargoItems) {
+            if (cargoItem.getCurrentCount().get() > 0) {
+                switch (cargoItem) {
+                    case ResourceItem ri -> colony.addInResourceInventory(ri.getResourceType(), (ri.getQuantityPerUnit()*ri.getCurrentCount().get()));
+                    case SatelliteItem si -> colony.addInSatelliteInventory(si.getSatelliteType(), si.getCurrentCount().get());
+                    case BuildingItem bi -> colony.addInBuildingInventory(bi.getBuilding(), bi.getCurrentCount().get());
+                }
+            }
+        }
+        reset();
+    }
+
     private List<CargoItem> initialiseCargoList() {
         var list = new ArrayList<CargoItem>();
-        list.add(new RessourceItem(5, 6, 5));
-        list.add(new RessourceItem(30, 40, 0));
+        list.addAll(CargoMarket.createResourceMarketItems());
+        list.addAll(CargoMarket.createSatelliteMarketItems());
 
         return list;
     }
