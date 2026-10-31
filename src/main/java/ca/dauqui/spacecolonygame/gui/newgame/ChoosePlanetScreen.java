@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gamedata.ProbeAndSatelliteEffect;
+import ca.dauqui.spacecolonygame.gamedata.starsystem.AtmosphereComposition;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.Planet;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
@@ -83,37 +84,7 @@ public class ChoosePlanetScreen extends VBox {
 
         planetView.getChildren().add(starCircle);
 
-        starSystem.addListener((_, oldValue, newValue) -> {
-            if (oldValue != newValue) {
-                if (newValue != null) {
-                    clearPlanets();
-                    for (Planet planet : newValue.getPlanets()) {
-                        PlanetNode planetNode = new PlanetNode(planet);
-                        planetNode.setOnMouseClicked(_ -> {
-                            if (selectedPlanet.get() != null) {
-                                selectedPlanet.get().setSelected(false);
-                            }
-                            selectedPlanet.set(planetNode);
-                            planetNode.setSelected(true);
-                        });
-
-
-                        planets.add(planetNode);
-                    }
-
-                    double interval = 1200.0/planets.size();
-                    int i = 0;
-
-                    for (PlanetNode planetNode : planets) {
-                        planetNode.setTranslateX(-700 + interval * i++);
-                    }
-
-                    planetView.getChildren().addAll(planets);
-                } else {
-                    clearPlanets();
-                }
-            }
-        });
+        addStarSystemListener();
 
         GridPane infoGrid = createInfoGrid();
 
@@ -135,6 +106,40 @@ public class ChoosePlanetScreen extends VBox {
         getChildren().addAll(planetView, infoGrid, buttonPane);
     }
 
+    private void addStarSystemListener() {
+        starSystem.addListener((_, oldValue, newValue) -> {
+            if (oldValue != newValue) {
+                clearPlanets();
+                if (newValue != null) {
+                    List<PlanetNode> nodes = newValue.getPlanets().stream()
+                            .map(this::createPlanetNode)
+                            .toList();
+                    planets.addAll(nodes);
+
+                    if (!planets.isEmpty()) {
+                        double interval = 1200.0 / planets.size();
+                        for (int i = 0; i < planets.size(); i++) {
+                            planets.get(i).setTranslateX(-700.0 + (interval * i));
+                        }
+                        planetView.getChildren().addAll(planets);
+                    }
+                }
+            }
+        });
+    }
+
+    private PlanetNode createPlanetNode(Planet planet) {
+        PlanetNode planetNode = new PlanetNode(planet);
+        planetNode.setOnMouseClicked(_ -> {
+            if (selectedPlanet.get() != null) {
+                selectedPlanet.get().setSelected(false);
+            }
+            selectedPlanet.set(planetNode);
+            planetNode.setSelected(true);
+        });
+        return planetNode;
+    }
+
     private InfoGrid<PlanetNode> createInfoGrid() {
         InfoGrid<PlanetNode> infoGrid = new InfoGrid<>(2);
 
@@ -150,7 +155,7 @@ public class ChoosePlanetScreen extends VBox {
         infoGrid.addInfo(1, 0, localizedProperty("ChoosePlanetScreen.DISTANCE"), selectedPlanet,
                 planet -> String.format("%.4f %s",planet.getPlanet().getDistance(), localizedProperty("ChoosePlanetScreen.DISTANCE_UNIT").get()));
         infoGrid.addInfo(0, 1, localizedProperty("ChoosePlanetScreen.RADIUS"), selectedPlanet,
-                planet -> String.format("%.3f %s",planet.getPlanet().getRadius(), planet.getPlanet().getRadiusUnit()));
+                planet -> Utility.formatMetric(planet.getPlanet().getRadius(), 3, planet.getPlanet().getRadiusUnit()));
         infoGrid.addInfo(1, 1, localizedProperty("ChoosePlanetScreen.MASS"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MASS ,planet -> String.format("%.3f", planet.getPlanet().getMass())));
         infoGrid.addInfo(0, 2, localizedProperty("ChoosePlanetScreen.GRAVITY"), selectedPlanet,
@@ -163,32 +168,49 @@ public class ChoosePlanetScreen extends VBox {
                     return String.format(Locale.getDefault(), "%.1f °C", tempCelsius);
                 }));
         infoGrid.addInfo(0, 3, localizedProperty("ChoosePlanetScreen.ATMOSPHERIC_PRESSURE"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_PRESSURE,
-                        planet -> String.format("%.3f %s",planet.getPlanet().getAtmosphericPressure(), localizedProperty("ChoosePlanetScreen.PRESSURE_UNIT").get())));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_PRESSURE, planet -> {
+                    if (!"PT".equals(planet.getPlanet().getType())){
+                        return "-";
+                    }
+                    return Utility.formatMetric(planet.getPlanet().getAtmosphericPressure(), 3, localizedProperty("ChoosePlanetScreen.PRESSURE_UNIT").get());
+                }));
         infoGrid.addInfo(1, 3, localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_COMPOSITION, planet -> planet.getPlanet().getMainAtmosphereGaz().toString()));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_COMPOSITION, planet ->{
+                    AtmosphereComposition atmosphereComposition = planet.getPlanet().getAtmosphereGazes();
+                    if (!atmosphereComposition.hasAtmosphere()){
+                        return localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get();
+                    }
+
+                    return atmosphereComposition.getGasesSortedByConcentration().stream()
+                            .limit(2)
+                            .map(gazType -> String.format("%s %.1f%%",
+                                    gazType.nameProperty().get(),
+                                    atmosphereComposition.getAtmosphereGazPercentage(gazType).get() * 100.0))
+                            .collect(java.util.stream.Collectors.joining(", "));
+
+                }));
         infoGrid.addInfo(0, 4, localizedProperty("ChoosePlanetScreen.TECTONIC_TYPE"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_TECTONIC, planet -> planet.getPlanet().getTectonic().toString()));
         infoGrid.addInfo(1, 4, localizedProperty("ChoosePlanetScreen.VOLCANISM_LEVEL"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_VOLCANISM,
-                        planet -> String.format("%.2f %s",planet.getPlanet().getVolcanism(), localizedProperty("ChoosePlanetScreen.VOLCANISM_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().getVolcanism(), 2, localizedProperty("ChoosePlanetScreen.VOLCANISM_UNIT").get())));
         infoGrid.addInfo(0, 5, localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_STRENGTH"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MAGNETIC_STRENGTH, planet -> String.format("%.2f %s",planet.getPlanet().getMagneticField(), localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_UNIT").get())));
         infoGrid.addInfo(1, 5, localizedProperty("ChoosePlanetScreen.ALBEDO"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ALBEDO, planet -> String.format("%.0f %%",planet.getPlanet().getAlbedo() * 100)));
         infoGrid.addInfo(0, 6, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ORBITAL_PERIOD,
-                        planet -> String.format("%.2f %s", planet.getPlanet().getOrbitalPeriodDays(), localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().getOrbitalPeriodDays(), 2, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS_UNIT").get())));
         infoGrid.addInfo(1, 6, localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ROTATION_PERIOD,
-                        planet -> String.format("%.2f %s",planet.getPlanet().getRotationPeriodHours(), localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().getRotationPeriodHours(), 2, localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS_UNIT").get())));
         infoGrid.addInfo(0, 7, localizedProperty("ChoosePlanetScreen.AXIS_TILT"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_AXIS_TILT, planet -> String.format("%.1f°", planet.getPlanet().getAxisTilt())));
         infoGrid.addInfo(1, 7, localizedProperty("ChoosePlanetScreen.IS_TIDALLY_LOCKED"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ROTATION_PERIOD,
                         planet -> planet.getPlanet().isTidallyLocked() ? localizedProperty("ChoosePlanetScreen.YES").get() : localizedProperty("ChoosePlanetScreen.NO").get()));
         infoGrid.addInfo(0, 8, localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT"), selectedPlanet,
-                planet -> String.format("%.3f %s",planet.getPlanet().getReceivedLight(), localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT_UNIT").get()));
+                planet -> Utility.formatMetric(planet.getPlanet().getReceivedLight(), 3, localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT_UNIT").get()));
         infoGrid.addInfo(1, 8, localizedProperty("ChoosePlanetScreen.NUMBER_OF_SITES"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_SITE_COUNT,
                         planet -> String.format("%d", planet.getPlanet().getNumberOfSites())));

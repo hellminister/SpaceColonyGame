@@ -18,25 +18,27 @@ public final class SatelliteType implements Localizable {
     private static final TypesafeConstants<SatelliteType> registry = new TypesafeConstants<>(SatelliteType.class, CONFIG_PATH) {
         @Override
         protected void parseProperties(Properties props, Map<String, SatelliteType> targetMap) {
+            Set<String> processedPrefixes = new HashSet<>();
             for (String key : props.stringPropertyNames()) {
-                if (key.endsWith(".id")) {
+                if (key.contains(".")) {
                     String prefix = key.substring(0, key.indexOf('.'));
-                    String id2 = props.getProperty(prefix + ".id").toUpperCase().trim();
 
-                    Set<ProbeAndSatelliteEffect> effects2 = new HashSet<>();
-                    String effectsStr = props.getProperty(prefix + ".effects");
+                    if (processedPrefixes.add(prefix)) {
+                        Set<ProbeAndSatelliteEffect> effects2 = new HashSet<>();
+                        String effectsStr = props.getProperty(prefix + ".effects");
 
-                    if (effectsStr != null && !effectsStr.isBlank()) {
-                        for (String token : effectsStr.split(",")) {
-                            try {
-                                effects2.add(ProbeAndSatelliteEffect.valueOf(token.trim().toUpperCase()));
-                            } catch (IllegalArgumentException _) {
-                                LOG.severe(() -> "Effet de sonde inconnu dans le fichier de config : " + token);
+                        if (effectsStr != null && !effectsStr.isBlank()) {
+                            for (String token : effectsStr.split(",")) {
+                                try {
+                                    effects2.add(ProbeAndSatelliteEffect.valueOf(token.trim().toUpperCase()));
+                                } catch (IllegalArgumentException _) {
+                                    LOG.severe(() -> "Effet de sonde inconnu dans le fichier de config : " + token);
+                                }
                             }
                         }
-                    }
 
-                    targetMap.put(id2, new SatelliteType(id2, effects2));
+                        targetMap.put(prefix, new SatelliteType(prefix, effects2));
+                    }
                 }
             }
         }

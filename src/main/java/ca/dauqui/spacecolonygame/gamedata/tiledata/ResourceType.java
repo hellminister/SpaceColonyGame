@@ -21,19 +21,22 @@ public final class ResourceType implements Localizable {
     private static final TypesafeConstants<ResourceType> tags = new TypesafeConstants<>(ResourceType.class, CONFIG_PATH) {
         @Override
         protected void parseProperties(Properties props, Map<String, ResourceType> targetMap) {
+            Set<String> processedPrefixes = new HashSet<>();
+
             for (String key : props.stringPropertyNames()) {
-                if (key.endsWith(".id")) {
+                if (key.contains(".")) {
                     String prefix = key.substring(0, key.indexOf('.'));
-                    String id2 = props.getProperty(prefix + ".id").toUpperCase().trim();
 
-                    GenerationParameters parameters2 = null;
-                    String naturallyOccurring = props.getProperty(prefix + ".naturallyOccurring");
+                    if (processedPrefixes.add(prefix)) {
+                        GenerationParameters parameters2 = null;
+                        String naturallyOccurring = props.getProperty(prefix + ".naturallyOccurring");
 
-                    if ("true".equals(naturallyOccurring)) {
-                        parameters2 = parseGenerationParameters(props, prefix);
+                        if ("true".equals(naturallyOccurring)) {
+                            parameters2 = parseGenerationParameters(props, prefix);
+                        }
+
+                        targetMap.put(prefix, new ResourceType(prefix, parameters2));
                     }
-
-                    targetMap.put(id2, new ResourceType(id2, parameters2));
                 }
             }
         }

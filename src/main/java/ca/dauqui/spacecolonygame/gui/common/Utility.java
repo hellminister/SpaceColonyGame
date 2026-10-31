@@ -32,6 +32,11 @@ public final class Utility {
 
     }
 
+    public static String formatMetric(double value, int decimals, String unit) {
+        String format = "%." + decimals + "f %s";
+        return String.format(format, value, unit);
+    }
+
     public static void applyOutpostSquareButtonStyle(Button button) {
         button.getStylesheets().add(OUTPOST_BUTTON_CSS_PATH);
         button.getStyleClass().add("outpost-button");

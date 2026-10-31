@@ -1,5 +1,9 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -27,33 +31,33 @@ public final class PlanetGenerator {
         String type = ps.getType().replace("?", "");
         String radiusUnit = ps.getRadiusUnit().replace("?", "");
 
-        double radius = ps.getRadius();
-        if (radius == -1) {
+        double radiusD = ps.getRadius();
+        if (radiusD == -1) {
             double roll = rand.nextDouble();
             if (roll < 0.6) {
                 type = "PT";
                 radiusUnit = "Re";
-                radius = rand.nextDouble(0.4, 2.0);
+                radiusD = rand.nextDouble(0.4, 2.0);
             } else if (roll < 0.9) {
                 type = "PN";
                 radiusUnit = "Rj";
-                radius = rand.nextDouble(3.0, 5.0);
+                radiusD = rand.nextDouble(3.0, 5.0);
             } else {
                 type = "PJ";
                 radiusUnit = "Rj";
-                radius = rand.nextDouble(6.0, 11.0);
+                radiusD = rand.nextDouble(6.0, 11.0);
             }
         }
 
         if ("-".equals(type)) {
-            type = radius < 2.2 ? "PT" : (radius < 6.0 ? "PN" : "PJ");
+            type = radiusD < 2.2 ? "PT" : (radiusD < 6.0 ? "PN" : "PJ");
             radiusUnit = "PT".equals(type) ? "Re" : "Rj";
         }
 
         double density = type.equals("PT") ? rand.nextDouble(4.0, 5.8) : rand.nextDouble(0.7, 1.8);
-        double mass = type.equals("PT") ? Math.pow(radius, 3) * (density / 5.51) : Math.pow(radius, 3) * density * 317.8;
-        double radiusInEarthUnits = type.equals("PT") ? radius : radius * 11.209;
-        double gravity = mass / Math.pow(radiusInEarthUnits, 2);
+        double mass = type.equals("PT") ? Math.pow(radiusD, 3) * (density / 5.51) : Math.pow(radiusD, 3) * density * 317.8;
+        double radiusInEarthUnits = type.equals("PT") ? radiusD : radiusD * 11.209;
+        double gravityD = mass / Math.pow(radiusInEarthUnits, 2);
 
         // 3. Activité Volcanique continue (0.0 = Éteint, 1.0 = Io / Enfer magmatique)
         double volcanism = generateVolcanism(type, radiusInEarthUnits);
@@ -64,8 +68,13 @@ public final class PlanetGenerator {
 
         double tempEquilibrium = 278.0 * Math.pow(((1.0 - albedo) * starLum) / Math.pow(distance, 2), 0.25);
 
+        DoubleProperty radius = new SimpleDoubleProperty(radiusD);
+        DoubleProperty gravity = new SimpleDoubleProperty(gravityD);
+        AtmosphereComposition atmosphereComposition = new AtmosphereComposition(gravity, radius, radiusUnit);
+
+
         // L'atmosphère prend désormais le double continu pour son calcul de dégazage
-        AtmosphereResult atmosphere = generateAtmosphere(type, gravity, tempEquilibrium, volcanism);
+        double temperature = generateAtmosphere(type, atmosphereComposition, gravityD, radiusD, radiusUnit, tempEquilibrium, volcanism);
 
         // 4. Intensité Magnétique continue (Proportionnelle à la masse et rotation/chaleur interne)
         double magneticField = generateMagnetosphere(mass, volcanism, type);
@@ -84,15 +93,17 @@ public final class PlanetGenerator {
             if (rand.nextDouble() > 0.96 && type.equals("PT")) rotationPeriodHours += rand.nextDouble(100.0, 4000.0);
         }
 
-        double finalTemperature = atmosphere.finalTemperature;
+        double finalTemperature = temperature;
         if (isTidallyLocked) finalTemperature -= 15.0;
 
-        int calculatedSites = calculateAvailableSites(type, radius, radiusUnit, gravity, finalTemperature, volcanism, receivedLight, tectonic, atmosphere.composition, magneticField);
+        // Calcul final des sites basé sur les nouvelles propriétés réactives globales
+        int calculatedSites = calculateAvailableSites(type, radiusD, radiusUnit, gravityD, finalTemperature, volcanism, receivedLight, tectonic, atmosphereComposition, magneticField);
 
+        // Ré-injection propre des sites calculés dans l'instance
         return new Planet(type, radius, radiusUnit, mass, gravity,
-                finalTemperature, atmosphere.pressure, distance,
+                finalTemperature, distance,
                 albedo, orbitalPeriodDays, rotationPeriodHours, axisTilt, isTidallyLocked,
-                atmosphere.composition, tectonic, volcanism, magneticField, receivedLight, calculatedSites);
+                atmosphereComposition, tectonic, volcanism, magneticField, receivedLight, calculatedSites);
     }
 
     private static double generateVolcanism(String type, double radiusInEarthUnits) {
@@ -128,37 +139,81 @@ public final class PlanetGenerator {
         return mass * (volcanism / 0.1) * rand.nextDouble(0.7, 1.3);
     }
 
-    private static AtmosphereResult generateAtmosphere(String type, double gravity, double tempEquilibrium, double volcanism) {
+    private static double generateAtmosphere(String type, AtmosphereComposition composition, double gravity, double radius, String radiusUnit, double tempEquilibrium,
+                                             double volcanism) {
+        // Crée l'instance de composition réactive (on passe deux fois la gravité pour le constructeur)
+
         if (!"PT".equals(type)) {
-            // Sélection dynamique basée sur la propriété native des géantes
-            return new AtmosphereResult(AtmosphereComposition.findGasGiantAtmosphere(), rand.nextDouble(50.0, 500.0), tempEquilibrium);
+            // GÉANTES GAZEUSES : Injection du cocktail primordial d'Hydrogène et d'Hélium
+            List<AtmosphereGazType> nativeGases = AtmosphereGazType.findGasGiantAtmospheres();
+            double gasGiantBaseMass = rand.nextDouble(50000.0, 500000.0);
+
+            for (AtmosphereGazType gas : nativeGases) {
+                if ("HYDROGEN".equals(gas.getId())) {
+                    composition.addGaz(gas, gasGiantBaseMass * rand.nextDouble(0.70, 0.85));
+                } else if ("HELIUM".equals(gas.getId())) {
+                    composition.addGaz(gas, gasGiantBaseMass * rand.nextDouble(0.15, 0.25));
+                }
+            }
+            return tempEquilibrium;
         }
 
+        // PLANÈTES TELLURIQUES : Rétention selon la température d'équilibre
         if (gravity > 0.20 && tempEquilibrium < 500) {
-            // Sélection dynamique basée sur la température d'équilibre de la planète
-            List<AtmosphereComposition> compList = AtmosphereComposition.findTelluricAtmosphere(tempEquilibrium);
+            List<AtmosphereGazType> compList = new ArrayList<>(AtmosphereGazType.findTelluricAtmosphere(tempEquilibrium));
 
-            AtmosphereComposition comp = compList.isEmpty() ? AtmosphereComposition.getAtmosphereComposition("NONE") : compList.get(rand.nextInt(compList.size()));
-
-            if (comp.getId().equals("NONE")) {
-                return new AtmosphereResult(comp, 0.0, tempEquilibrium);
+            if (compList.isEmpty()) {
+                return tempEquilibrium;
             }
 
+            // Tri par poids moléculaire avec un léger bruit géologique (+/- 5 g/mol)
+            compList.sort((g1, g2) -> {
+                double weight1 = g1.getMolecularWeight() + rand.nextDouble(-5.0, 5.0);
+                double weight2 = g2.getMolecularWeight() + rand.nextDouble(-5.0, 5.0);
+                return Double.compare(weight2, weight1); // Décroissant
+            });
+
+            // Définition de la cible de pression physique
             double maxPressure = Math.pow(gravity, 2) * 4.0;
-            double pressure = rand.nextDouble(0.01, maxPressure);
+            double baselinePressure = rand.nextDouble(0.01, maxPressure);
 
             if (volcanism > 1.0) {
-                pressure += rand.nextDouble(2.0, 5.0); // Mondes hyper-volcaniques (type Vénus)
+                baselinePressure += rand.nextDouble(2.0, 5.0); // Runaway volcanique (Type Vénus)
             } else if (volcanism > 0.15) {
-                pressure += rand.nextDouble(0.1, 1.5); // Activité standard
+                baselinePressure += rand.nextDouble(0.1, 1.5);
             }
 
-            // Application de la formule physique, totalement découplée
-            double greenhouseMultiplier = 1.0 + (Math.log1p(pressure) * (comp.getGreenhouseFactor() / 100.0));
-            return new AtmosphereResult(comp, pressure, tempEquilibrium * greenhouseMultiplier);
+            double conversionValue = "Re".equals(radiusUnit) ? 6371000.0 : 69911000.0;
+            double estimatedSurfaceArea = 4.0 * Math.PI * Math.pow(radius * conversionValue, 2);
+
+            // Masse requise = (Pression cible * Surface * 100000) / Gravité
+            double targetedRawMass = (baselinePressure * estimatedSurfaceArea * 100000.0) / gravity;
+
+            double remainingPercentage = 1.0;
+
+            for (int i = 0; i < compList.size() - 1 && remainingPercentage > 0.001; i++) {
+                double share = rand.nextDouble(remainingPercentage * 0.40, remainingPercentage * 0.75);
+                share = Math.round(share * 100.0) / 100.0;
+
+                if (share > 0.0) {
+                    composition.addGaz(compList.get(i), targetedRawMass * share);
+                    remainingPercentage -= share;
+                }
+            }
+
+            // Le gaz le plus léger restant prend le résidu mathématique
+            double finalShare = Math.round(remainingPercentage * 100.0) / 100.0;
+            if (finalShare > 0.0) {
+                composition.addGaz(compList.getLast(), targetedRawMass * finalShare);
+            }
+
+            // Application de l'effet de serre global calculé en temps réel par ton DoubleBinding
+            double greenhouseMultiplier = 1.0 + (Math.log1p(composition.getPressure()) * (composition.getGreenhouseFactor() / 100.0));
+            return (tempEquilibrium * greenhouseMultiplier);
         }
 
-        return new AtmosphereResult(AtmosphereComposition.getAtmosphereComposition("NONE"), 0.0, tempEquilibrium);
+        // Monde mort ou sans air
+        return tempEquilibrium;
     }
 
     private static int calculateAvailableSites(String type, double radius, String radiusUnit,
@@ -204,7 +259,7 @@ public final class PlanetGenerator {
         }
 
         // 5. FACTEUR ATMOSPHÉRIQUE : Toxicité et Corrosion du Gamedata
-        if (atmosphere != null && !"NONE".equalsIgnoreCase(atmosphere.getId())) {
+        if (atmosphere != null && atmosphere.getPressure() > 0.0) {
             double corrosiveness = atmosphere.getCorrosiveness();
             double toxicity = atmosphere.getToxicity();
 
@@ -236,7 +291,6 @@ public final class PlanetGenerator {
         return Math.clamp(sites, 1, 20);
     }
 
-    private record AtmosphereResult(AtmosphereComposition composition, double pressure, double finalTemperature) {}
     public static Planet generate(StarSystemAsset probed) { return generate(probed, DEFAULT_PLANET); }
 
     public static void start() {
