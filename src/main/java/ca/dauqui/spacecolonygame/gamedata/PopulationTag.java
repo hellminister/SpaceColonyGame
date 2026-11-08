@@ -9,70 +9,112 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Represents an immutable operational demographic profiling tag applied to colony populations.
+ * Governs ideological, physiological, or occupational compatibility matrices, restricting or
+ * enabling shared habitation and deployment rules within settlement structures.
+ * All technical documentation is standardized on Canadian English requirements.
+ *
+ * @param id               The unique string identifier token tracking this demographic tag
+ * @param incompatibleTags An unmodifiable set of tags that cannot coexist with this profile
+ * @param name             The reactive localized text property layer bound to UI rendering pipelines
+ *
+ * @author Jean-François Quintal
+ */
 @Localized
-public final class PopulationTag implements Localizable {
-    private static final Logger LOG = Logger.getLogger(PopulationTag.class.getName());
+public record PopulationTag(
+        String id,
+        Set<PopulationTag> incompatibleTags,
+        ReadOnlyStringProperty name
+) implements Localizable {
     private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/populationtag.properties";
     private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
-    private static final TypesafeConstants<PopulationTag> tags = new TypesafeConstants<>(PopulationTag.class, CONFIG_PATH) {
+    /**
+     * Specialized constants loader parsing demographic profiles from disk properties.
+     * Reconstructs a bidirectional unmodifiable graph layout mapping social incompatibilities.
+     */
+    private static final TypesafeConstants<PopulationTag> tags = new TypesafeConstants<>(CONFIG_PATH) {
         @Override
         protected void parseProperties(Properties props, Map<String, PopulationTag> targetMap) {
+            // Transient memory layer holding onto mutable hash sets during the bidirectional wiring phase
             Map<PopulationTag, Set<PopulationTag>> incompatibleTagSets = new HashMap<>();
 
             for (String key : props.stringPropertyNames()) {
-                PopulationTag tag = targetMap.computeIfAbsent(key, _ -> new PopulationTag(key));
+                Result tag = computeIfAbsent(key, targetMap, incompatibleTagSets);
+
                 String property = props.getProperty(key);
                 String[] split = property.split(",");
-                Set<PopulationTag> set = incompatibleTagSets.computeIfAbsent(tag, _ -> new HashSet<>());
                 for (String s : split) {
                     String trimmed = s.trim();
-                    PopulationTag incompatible = targetMap.computeIfAbsent(trimmed, _ -> new PopulationTag(trimmed));
-                    set.add(incompatible);
-                    Set<PopulationTag> set2 = incompatibleTagSets.computeIfAbsent(incompatible, _ -> new HashSet<>());
-                    set2.add(tag);
+                    Result incompatible = computeIfAbsent(trimmed, targetMap, incompatibleTagSets);
+                    tag.incompatibleTags().add(incompatible.tag());
+                    incompatible.incompatibleTags().add(tag.tag());
                 }
             }
+        }
 
-            for (  Map.Entry<PopulationTag, Set<PopulationTag>> row : incompatibleTagSets.entrySet()){
-                row.getKey().setIncompatibleTags(row.getValue());
+        /**
+         * Resolves or dynamically instantiates a demographic tag profile during the parsing phase.
+         * Leverages a transient mutable hash set layer to allow bidirectional linkage
+         * prior to sealing the collection context layout permanently.
+         *
+         * @param id                  The target unique registration demographic identifier string
+         * @param targetMap           The global registry map recording final PopulationTag instances
+         * @param incompatibleTagSets Transient tracking matrix capturing mutable references for graph wiring
+         * @return A processing lookup transfer record containing the tag and its underlying mutable set
+         */
+        private Result computeIfAbsent(String id, Map<String, PopulationTag> targetMap, Map<PopulationTag, Set<PopulationTag>> incompatibleTagSets){
+            PopulationTag tag = targetMap.get(id);
+            Set<PopulationTag> incompatibleTags = null;
+            if (tag == null) {
+                // Initializes a transient mutable set that will act beneath the unmodifiable view wrapper
+                incompatibleTags = new HashSet<>();
+                tag = new PopulationTag(id, incompatibleTags);
+                targetMap.put(id, tag);
+                incompatibleTagSets.put(tag, incompatibleTags);
+            } else {
+                // Re-extracts the active mutable reference pointer to safely continue the bidirectional layout wiring
+                incompatibleTags = incompatibleTagSets.get(tag);
             }
+            return new Result(tag, incompatibleTags);
         }
 
-        @Override
-        protected void fallback(Map<String, PopulationTag> targetMap) {
-            // not used here
-        }
+        /**
+         * Transient structural carrier record deployed exclusively during the data-parsing phase
+         * to transport linked mutable collections across initialization gates.
+         */
+        private record Result(PopulationTag tag, Set<PopulationTag> incompatibleTags) {}
+
     };
 
+    /**
+     * returns all the existing population tags
+     * @return An immutable collection containing all available population tags
+     */
     public static Collection<PopulationTag> getTags() {
         return Collections.unmodifiableCollection(tags.getAll());
     }
 
+
+    /**
+     * returns a PopulationTag corresponding to the given id
+     * @param id the PopulationTag id
+     * @return the corresponding PopulationTag
+     */
     public static PopulationTag getTag(String id) {
         return tags.get(id);
     }
 
-    private final String id;
-    private Set<PopulationTag> incompatibleTags;
-    private final ReadOnlyStringProperty name;
-
-    private PopulationTag(String id) {
-        this.id = id;
-        name = Localize.getProperty(ENUMS_BUNDLE, "PopulationTag." + id);
+    private PopulationTag(String id, Set<PopulationTag> incompatibleTags) {
+        this(id, Collections.unmodifiableSet(incompatibleTags), Localize.getProperty(ENUMS_BUNDLE, "PopulationTag." + id));
     }
 
-    private void setIncompatibleTags(Set<PopulationTag> incompatibleTags) {
-        this.incompatibleTags = Collections.unmodifiableSet(incompatibleTags);
-    }
-
-    public String getId() {
-        return id;
-    }
-    public Set<PopulationTag> getIncompatibleTags() {
-        return incompatibleTags;
-    }
-
+    /**
+     * Determines whether the given PopulationTag is compatible with this Tag
+     * @param tag The Tag to evaluate
+     * @return Whether they are compatible or not
+     */
     public boolean isCompatible(PopulationTag tag) {
         return !incompatibleTags.contains(tag);
     }
@@ -84,7 +126,7 @@ public final class PopulationTag implements Localizable {
 
     @Override
     public String toString() {
-        return name.get();
+        return id;
     }
 
     @Override

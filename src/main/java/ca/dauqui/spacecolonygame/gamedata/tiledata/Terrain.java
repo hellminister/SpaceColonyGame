@@ -1,10 +1,15 @@
 package ca.dauqui.spacecolonygame.gamedata.tiledata;
 
+import ca.dauqui.spacecolonygame.gamedata.ResourceType;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * represents an untouched tile of the site
+ */
 public class Terrain extends TileData {
     private final TerrainType terrainType;
     private final Map<ResourceType, Double> resources;

@@ -1,55 +1,76 @@
 package ca.dauqui.spacecolonygame.util;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.logging.Logger;
 
+/**
+ * Abstract class used to load static information about the type of data using this structure
+ * Acts like a sort of weak enum
+ * @param <T> The type of the class using this structure
+ */
 public abstract class TypesafeConstants<T> {
-    private final Logger log;
+    /**
+     * The immutable map containing each available objects linked to its key
+     */
     private final Map<String, T> registryMap;
 
-    protected TypesafeConstants(Class<?> childClass, String configPath) {
-        this.log = Logger.getLogger(childClass.getName());
-
+    /**
+     * @param configPath the file path of the file containing the data
+     */
+    protected TypesafeConstants(String configPath) {
         Map<String, T> tempMap = new HashMap<>();
-        loadProperties(childClass, configPath, tempMap);
+        loadProperties(configPath, tempMap);
         this.registryMap = Collections.unmodifiableMap(tempMap);
     }
 
-    private void loadProperties(Class<?> childClass, String configPath, Map<String, T> targetMap) {
-        Properties props = new Properties();
-        try (InputStream is = childClass.getResourceAsStream(configPath)) {
-            if (is == null) {
-                throw new java.io.FileNotFoundException("Resource file not found: " + configPath);
-            }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                props.load(br);
-            }
+    /**
+     * Loads the data from the files and generates the data structures for each object
+     * @param configPath the path to the description of the objects
+     * @param targetMap The map containing the objects
+     */
+    private void loadProperties(String configPath, Map<String, T> targetMap) {
+        Properties props = ModdablePropertiesLoader.load(configPath);
 
-            parseProperties(props, targetMap);
-
-        } catch (Exception e) {
-            log.severe(() -> "Critical error loading registry configuration: " + e.getMessage());
-        }
+        parseProperties(props, targetMap);
 
         fallback(targetMap);
     }
 
+    /**
+     * takes the data from the file and creates each object and stores them in the map
+     * @param props The data about all the objects
+     * @param targetMap the map that will contain all the objects
+     */
     protected abstract void parseProperties(Properties props, Map<String, T> targetMap);
-    protected abstract void fallback(Map<String, T> targetMap);
 
-    public T get(String id) {
-        T instance = registryMap.get(id.trim().toUpperCase());
-        return instance;
+    /**
+     * implement this if you need to create an object that must be present in the map
+     * @param targetMap The map containing the objects
+     */
+    protected void fallback(Map<String, T> targetMap){
+        //To be implemented when needed
     }
 
+    /**
+     * Returns the asked object
+     * @param id the id of the wanted object
+     * @return the object corresponding to the id (or null if the id doesn't exist)
+     */
+    public T get(String id) {
+        return registryMap.get(id);
+    }
+
+    /**
+     * Returns all the objects of this type
+     * @return an immutable collection containing all the objects of this type
+     */
     public Collection<T> getAll() {
         return registryMap.values();
     }
 
+    /**
+     * return the map containing the objects
+     * @return an immutable map containing all the object and key of this type
+     */
     public Map<String, T> getInternalMap() {
         return registryMap;
     }

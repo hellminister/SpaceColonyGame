@@ -14,19 +14,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class contains the gazes composing the planet's atmosphere as well as its pressure
- * It also calculates the atmosphere Toxicity, Corrosiveness, Greenhouse factor and Air pressure
+ * This class contains the gases composing the planet's atmosphere as well as its pressure
+ * It also calculates the atmosphere Toxicity, Corrosiveness, Greenhouse factor and Air pressure and surface temperature
+ *
+ * @author Jean-François Quintal
  */
 public class AtmosphereComposition {
 
-    private final ObservableMap<AtmosphereGazType, DoubleProperty> atmosphereGaz;
-    private final Map<AtmosphereGazType, DoubleBinding> atmosphereGazPercentage;
-    private final DoubleBinding totalGazMass;
+    private final ObservableMap<AtmosphereGasType, DoubleProperty> atmosphereGas;
+    private final Map<AtmosphereGasType, DoubleBinding> atmosphereGasPercentage;
+    private final DoubleBinding totalGasMass;
     private final DoubleBinding pressure;
-    private final DoubleBinding surfaceArea;
     private final DoubleBinding toxicity;
     private final DoubleBinding corrosiveness;
     private final DoubleBinding greenhouseFactor;
+    private final DoubleBinding surfaceTemperature;
 
     /**
      * Initialize the class and prepares the variables bindings
@@ -35,50 +37,58 @@ public class AtmosphereComposition {
      * @param radius the radius of the planet
      * @param radiusUnit the radius unit used
      */
-    public AtmosphereComposition(ReadOnlyDoubleProperty gravity, ReadOnlyDoubleProperty radius, String radiusUnit) {
-        this.atmosphereGaz = FXCollections.observableMap(new HashMap<>());
-        this.atmosphereGazPercentage = new HashMap<>();
+    public AtmosphereComposition(double gravity, double radius, String radiusUnit, double tempEquilibrium, boolean isTidallyLocked) {
+        this.atmosphereGas = FXCollections.observableMap(new HashMap<>());
+        this.atmosphereGasPercentage = new HashMap<>();
 
-        this.surfaceArea = new DoubleBinding() {
-            private final double conversionValue;
-            {
-                bind(radius);
-                if ("Re".equals(radiusUnit)) {
-                    conversionValue = 6371000; // meters
-                } else {
-                    conversionValue = 69911000; // meters
-                }
-            }
-            @Override
-            protected double computeValue() {
-                return 4 * Math.PI * Math.pow(radius.get() * conversionValue, 2);
-            }
-        };
+        double conversionValue = ("Re".equals(radiusUnit)) ? 6371000 : 69911000; // meters
+        double surfaceArea = 4 * Math.PI * Math.pow(radius * conversionValue, 2);
 
-        this.totalGazMass = new AtmosphereMapTrackingBinding() {
+        this.totalGasMass = new AtmosphereMapTrackingBinding() {
             @Override
             protected double computeValue() {
                 // Sum up all DoubleProperties currently in the map
-                return atmosphereGaz.values().stream()
-                        .mapToDouble(DoubleProperty::get)
-                        .sum();
+                double sum = 0.0;
+                for (var prop : atmosphereGas.values()) {
+                    sum += prop.get();
+                }
+                return sum;
             }
         };
 
         this.pressure = new DoubleBinding() {
             {
-                bind(totalGazMass, surfaceArea, gravity);
+                bind(totalGasMass);
             }
 
             @Override
             protected double computeValue() {
-                return (totalGazMass.get() * gravity.get()) / (surfaceArea.get() * 100000);
+                return (totalGasMass.get() * gravity) / (surfaceArea * 100000);
             }
         };
 
-        toxicity = new AtmosphericWeightedAverageBinding(AtmosphereGazType::getToxicity);
-        corrosiveness = new AtmosphericWeightedAverageBinding(AtmosphereGazType::getCorrosiveness);
-        greenhouseFactor = new AtmosphericWeightedAverageBinding(AtmosphereGazType::getGreenhouseFactor);
+        toxicity = new AtmosphericWeightedAverageBinding(AtmosphereGasType::toxicity);
+        corrosiveness = new AtmosphericWeightedAverageBinding(AtmosphereGasType::corrosiveness);
+        greenhouseFactor = new AtmosphericWeightedAverageBinding(AtmosphereGasType::greenhouseFactor);
+
+        surfaceTemperature = new DoubleBinding() {
+            {
+                bind(greenhouseFactor, pressure);
+            }
+
+            @Override
+            protected double computeValue() {
+                double greenhouseMultiplier = 1.0 + (Math.log1p(pressure.get()) * (greenhouseFactor.get() / 100.0));
+                double computedTemp = tempEquilibrium * greenhouseMultiplier;
+
+                // If the world is tidally locked, apply the permanent background radiation cooling offset natively
+                if (isTidallyLocked) {
+                    computedTemp -= 15.0;
+                }
+
+                return computedTemp;
+            }
+        };
     }
 
     /**
@@ -139,59 +149,73 @@ public class AtmosphereComposition {
     }
 
     /**
-     * returns a Binding that gives the relative amount of the asked gaz composing the atmosphere in a value from 0.0 to 1.0 (just multiply by 100 for percent)
-     * will add a missing gaz with amount of 0 in the main table if the gaz is not present
-     * @param atmosphereGazType the requested gaz
-     * @return a binding with the relative amount of the asked gaz
+     * @return the temperature of the planet affected by the greenhouse effect
      */
-    public DoubleBinding getAtmosphereGazPercentage(AtmosphereGazType atmosphereGazType) {
-        var prop = atmosphereGazPercentage.get(atmosphereGazType);
+    public double getSurfaceTemperature() {
+        return surfaceTemperature.get();
+    }
+
+    /**
+     * @return the temperature of the planet affected by the greenhouse effect
+     */
+    public DoubleBinding surfaceTemperatureProperty() {
+        return surfaceTemperature;
+    }
+
+    /**
+     * returns a Binding that gives the relative amount of the asked gas composing the atmosphere in a value from 0.0 to 1.0 (just multiply by 100 for percent)
+     * will add a missing gas with amount of 0 in the main table if the gas is not present
+     * @param atmosphereGasType the requested gas
+     * @return a binding with the relative amount of the asked gas
+     */
+    public DoubleBinding getAtmosphereGasPercentage(AtmosphereGasType atmosphereGasType) {
+        var prop = atmosphereGasPercentage.get(atmosphereGasType);
         if (prop == null) {
-            addGaz(atmosphereGazType, 0);
+            addGas(atmosphereGasType, 0);
         }
 
-        return atmosphereGazPercentage.computeIfAbsent(atmosphereGazType, _ ->
+        return atmosphereGasPercentage.computeIfAbsent(atmosphereGasType, _ ->
                 new DoubleBinding() {
                     private final ReadOnlyDoubleProperty rawValue;
                     {
-                        rawValue = atmosphereGaz.get(atmosphereGazType);
-                        bind(rawValue, totalGazMass);
+                        rawValue = atmosphereGas.get(atmosphereGasType);
+                        bind(rawValue, totalGasMass);
                     }
 
                     @Override
                     protected double computeValue() {
-                        return rawValue.get() / totalGazMass.get();
+                        return rawValue.get() / totalGasMass.get();
                     }
                 });
     }
 
     /**
-     * Adds a certain amount of this gaz to the planets atmosphere
-     * @param atmosphereGazType the gaz added
-     * @param amount the amount of gaz added in kg
+     * Adds a certain amount of this gas to the planets atmosphere
+     * @param atmosphereGasType the gas added
+     * @param amount the amount of gas added in kg
      */
-    public void addGaz(AtmosphereGazType atmosphereGazType, double amount) {
-        DoubleProperty prop = atmosphereGaz.get(atmosphereGazType);
+    public void addGas(AtmosphereGasType atmosphereGasType, double amount) {
+        DoubleProperty prop = atmosphereGas.get(atmosphereGasType);
         if (prop == null){
-            atmosphereGaz.put(atmosphereGazType, new SimpleDoubleProperty(amount));
+            atmosphereGas.put(atmosphereGasType, new SimpleDoubleProperty(amount));
         } else {
             prop.set(prop.get() + amount);
         }
     }
 
     /**
-     * removes a certain amount of gaz from the atmosphere
+     * removes a certain amount of gas from the atmosphere
      * if the amount to be removed is greater than the amount contained, the method will return the amount that couldn't have been removed
-     * ex.: wanting to remove 100 from 50 will result in the gaz amount stored to be 0 and the return value to be 50
-     * This method won't remove a gaz from the table, but will put a missing one with a value of 0
-     * @param atmosphereGazType the gaz type to be removed
-     * @param amount the amount of gaz to remove in kg
+     * ex.: wanting to remove 100 from 50 will result in the gas amount stored to be 0 and the return value to be 50
+     * This method won't remove a gas from the table, but will put a missing one with a value of 0
+     * @param atmosphereGasType the gas type to be removed
+     * @param amount the amount of gas to remove in kg
      * @return the amount that couldn't be removed in kg
      */
-    public double removeGaz(AtmosphereGazType atmosphereGazType, double amount) {
-        DoubleProperty prop = atmosphereGaz.get(atmosphereGazType);
+    public double removeGas(AtmosphereGasType atmosphereGasType, double amount) {
+        DoubleProperty prop = atmosphereGas.get(atmosphereGasType);
         if (prop == null){
-            addGaz(atmosphereGazType, 0.0);
+            addGas(atmosphereGasType, 0.0);
             return amount;
         }
 
@@ -212,16 +236,16 @@ public class AtmosphereComposition {
      * sorted in descending order based on their current mass concentration.
      * Gases with a higher mass or percentage will appear first.
      *
-     * @return a sorted list of AtmosphereGazType from highest to lowest concentration
+     * @return a sorted list of AtmosphereGasType from highest to lowest concentration
      */
-    public List<AtmosphereGazType> getGasesSortedByConcentration() {
-        if (atmosphereGaz.isEmpty()) {
+    public List<AtmosphereGasType> getGasesSortedByConcentration() {
+        if (atmosphereGas.isEmpty()) {
             return List.of();
-        } else if ( atmosphereGaz.size() == 1) {
-            return List.of(atmosphereGaz.keySet().iterator().next());
+        } else if ( atmosphereGas.size() == 1) {
+            return List.of(atmosphereGas.keySet().iterator().next());
         }
 
-        return atmosphereGaz.entrySet().stream()
+        return atmosphereGas.entrySet().stream()
                 // Sort by value (DoubleProperty) in reverse order (descending)
                 .sorted((entry1, entry2) -> Double.compare(entry2.getValue().get(), entry1.getValue().get()))
                 // Map back to the keys (the gas types)
@@ -233,7 +257,7 @@ public class AtmosphereComposition {
      * @return whether there is an atmosphere or not
      */
     public boolean hasAtmosphere(){
-        return totalGazMass.get() > 0.0;
+        return totalGasMass.get() > 0.0;
     }
 
     /**
@@ -241,11 +265,11 @@ public class AtmosphereComposition {
      * over the atmospheric gases map entries. Slashes raw boilerplate.
      */
     private abstract class AtmosphereMapTrackingBinding extends DoubleBinding {
-        protected final InvalidationListener entryListener = _ -> bind();
+        protected final InvalidationListener entryListener = _ -> invalidate();
 
         protected AtmosphereMapTrackingBinding() {
             // Automatically registers listeners whenever a gas is added or removed from the simulation
-            atmosphereGaz.addListener((MapChangeListener<? super AtmosphereGazType, ? super DoubleProperty>) change -> {
+            atmosphereGas.addListener((MapChangeListener<? super AtmosphereGasType, ? super DoubleProperty>) change -> {
                 if (change.wasAdded()) {
                     change.getValueAdded().addListener(entryListener);
                 }
@@ -258,7 +282,7 @@ public class AtmosphereComposition {
 
         @Override
         public void dispose() {
-            atmosphereGaz.values().forEach(prop -> prop.removeListener(entryListener));
+            atmosphereGas.values().forEach(prop -> prop.removeListener(entryListener));
             super.dispose();
         }
     }
@@ -268,24 +292,27 @@ public class AtmosphereComposition {
      * for a given gas property using a functional extractor lambda.
      */
     private final class AtmosphericWeightedAverageBinding extends AtmosphereMapTrackingBinding {
-        private final java.util.function.ToDoubleFunction<AtmosphereGazType> coefficientExtractor;
+        private final java.util.function.ToDoubleFunction<AtmosphereGasType> coefficientExtractor;
 
-        public AtmosphericWeightedAverageBinding(java.util.function.ToDoubleFunction<AtmosphereGazType> extractor) {
+        public AtmosphericWeightedAverageBinding(java.util.function.ToDoubleFunction<AtmosphereGasType> extractor) {
             this.coefficientExtractor = extractor;
-            bind(totalGazMass); // Automatically recomputes if global air density changes
+            bind(totalGasMass); // Automatically recomputes if global air density changes
         }
 
         @Override
         protected double computeValue() {
-            double totalMass = totalGazMass.get();
-            if (totalMass <= 0.0 || atmosphereGaz.isEmpty()) {
+            double totalMass = totalGasMass.get();
+            if (totalMass <= 0.0 || atmosphereGas.isEmpty()) {
                 return 0.0;
             }
 
-            double totalScore = atmosphereGaz.entrySet().stream()
-                    .filter(entry -> entry.getKey() != null)
-                    .mapToDouble(entry -> entry.getValue().get() * coefficientExtractor.applyAsDouble(entry.getKey()))
-                    .sum();
+            double totalScore = 0.0;
+            for (var entry : atmosphereGas.entrySet()) {
+                AtmosphereGasType gas = entry.getKey();
+                if (gas != null) {
+                    totalScore += entry.getValue().get() * coefficientExtractor.applyAsDouble(gas);
+                }
+            }
 
             return totalScore / totalMass;
         }

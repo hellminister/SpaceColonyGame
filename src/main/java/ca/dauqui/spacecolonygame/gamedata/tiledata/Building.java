@@ -1,5 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata.tiledata;
 
+import ca.dauqui.spacecolonygame.gamedata.ResourceType;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

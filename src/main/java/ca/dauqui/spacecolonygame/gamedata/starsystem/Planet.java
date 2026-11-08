@@ -1,144 +1,59 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
+/**
+ * Immutable structural record defining the comprehensive physical, environmental,
+ * and atmospheric characteristics of a generated planetary body.
+ * Optimized using Canadian English development standards.
+ *
+ * @param type                   The astronomical classification category (e.g., "PT", "PN", "PJ")
+ * @param radius                 The physical radius dimension metric
+ * @param radiusUnit             The unit designator framework deployed ("Re" or "Rj")
+ * @param mass                   The planetary mass relative parameters
+ * @param gravity                The baseline static surface gravity parameters
+ * @param temperatureEquilibrium The unmodified equilibrium temperature Kelvin
+ * @param distance               The semi-major orbital axis distance tracked in Astronomical Units (AU)
+ * @param albedo                 The localized surface reflectivity index configuration
+ * @param orbitalPeriodDays      The complete stellar revolution duration tracked in Earth days
+ * @param rotationPeriodHours    The sidereal rotation day duration tracked in hours
+ * @param axisTilt               The axial obliquity tilt inclination value evaluated in degrees
+ * @param isTidallyLocked        True if the planetary rotation is fully locked with its host star
+ * @param receivedLight          The net stellar irradiance flux captured at orbital distance
+ * @param numberOfSites          The total count of safe exploitable landing site grids available
+ * @param atmosphereComposition  The mutable reactive biochemical atmospheric simulation layer
+ * @param tectonic               The core geological crust plate structural behaviour index
+ * @param volcanism              The continuous global geothermal heat flux metric (W/m²)
+ * @param magneticField          The planetary magnetosphere dynamo protective shield index
+ *
+ * @author Jean-François Quintal
+ */
+public record Planet(String type,
+                     double radius,
+                     String radiusUnit,
+                     double mass,
+                     double gravity,
+                     double temperatureEquilibrium,
+                     double distance,
+                     double albedo,
+                     double orbitalPeriodDays,
+                     double rotationPeriodHours,
+                     double axisTilt,
+                     boolean isTidallyLocked,
+                     double receivedLight,
+                     int numberOfSites,
+                     AtmosphereComposition atmosphereComposition,
+                     TectonicType tectonic,
+                     double volcanism,
+                     double magneticField) {
 
-public class Planet {
-
-    private final String type;
-    private final DoubleProperty radius;
-    private final String radiusUnit;
-    private final double mass;
-    private final DoubleProperty gravity;
-    private final double temperature;
-    private final double distance; // En AU
-
-    private final double albedo;
-    private final double orbitalPeriodDays;  // Révolution (Durée de l'année)
-    private final double rotationPeriodHours; // Rotation (Durée du jour)
-    private final double axisTilt;           // Inclinaison de l'axe
-    private final boolean isTidallyLocked;   // Verrouillage gravitationnel
-    private final double receivedLight;
-    private final int numberOfSites;
-
-    // Caractéristiques physiques localisables fortement typées
-    private final AtmosphereComposition atmosphereComposition;
-    private final TectonicType tectonic;
-    private final double volcanism;
-    private final double magneticField;
-
-    @SuppressWarnings("java:S107")
-    public Planet(String type, DoubleProperty radius, String radiusUnit, double mass, DoubleProperty gravity,
-                  double temperature, double distance,
-                  double albedo, double orbitalPeriodDays, double rotationPeriodHours,
-                  double axisTilt, boolean isTidallyLocked,
-                  AtmosphereComposition atmosphereComposition, TectonicType tectonic,
-                  double volcanism, double magneticField, double receivedLight, int numberOfSites) {
-        this.type = type;
-        this.radius = radius;
-        this.radiusUnit = radiusUnit;
-        this.mass = mass;
-        this.gravity = gravity;
-        this.temperature = temperature;
-        this.distance = distance;
-
-        this.albedo = albedo;
-        this.orbitalPeriodDays = orbitalPeriodDays;
-        this.rotationPeriodHours = rotationPeriodHours;
-        this.axisTilt = axisTilt;
-        this.isTidallyLocked = isTidallyLocked;
-        this.receivedLight = receivedLight;
-        this.numberOfSites = numberOfSites;
-
-        this.atmosphereComposition = atmosphereComposition;
-        this.tectonic = tectonic;
-        this.volcanism = volcanism;
-        this.magneticField = magneticField;
-    }
-
-
-    public String getType() {
-        return type;
-    }
-
-    public ReadOnlyDoubleProperty radiusProperty() {
-        return radius;
-    }
-
-    public double getRadius() {
-        return radius.get();
-    }
-
-    public String getRadiusUnit() {
-        return radiusUnit;
-    }
-
-    public double getMass() {
-        return mass;
-    }
-
-    public double getGravity() {
-        return gravity.get();
-    }
-
-    public ReadOnlyDoubleProperty gravityProperty() {
-        return gravity;
-    }
-
-    public double getTemperature() {
-        return temperature;
-    }
-
-    public AtmosphereComposition getAtmosphereGazes() {
-        return atmosphereComposition;
-    }
-
-    public TectonicType getTectonic() {
-        return tectonic;
-    }
-
-    public double getVolcanism() {
-        return volcanism;
-    }
-
-    public double getMagneticField() {
-        return magneticField;
-    }
-
-    public double getDistance() {
-        return distance;
-    }
-
-    public double getAtmosphericPressure() {
+    /**
+     * @return The atmospheric pressure for the planet in Bars
+     */
+    public double atmosphericPressure() {
         return atmosphereComposition.getPressure();
     }
 
-    public double getAlbedo() {
-        return albedo;
-    }
-
-    public double getOrbitalPeriodDays() {
-        return orbitalPeriodDays;
-    }
-
-    public double getRotationPeriodHours() {
-        return rotationPeriodHours;
-    }
-
-    public double getAxisTilt() {
-        return axisTilt;
-    }
-
-    public boolean isTidallyLocked() {
-        return isTidallyLocked;
-    }
-
-    public double getReceivedLight() {
-        return receivedLight;
-    }
-
-    public int getNumberOfSites() {
-        return numberOfSites;
-    }
+    /**
+     * @return the planet's temperature in Kelvin
+     */
+    public double surfaceTemperature() { return atmosphereComposition.getSurfaceTemperature(); }
 }

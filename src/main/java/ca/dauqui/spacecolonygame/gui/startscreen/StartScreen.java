@@ -13,12 +13,23 @@ import javafx.scene.layout.VBox;
 
 import java.util.logging.Logger;
 
+/**
+ * Main application title interface container loaded upon bootstrap.
+ * Hosts primary navigation dispatch actions to route users into campaign creation flows.
+ *
+ * @author Jean-François Quintal
+ */
 public class StartScreen extends Scene {
-    private static final Logger LOG = Logger.getLogger(StartScreen.class.getName());
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
     private final MainWindow mainWindow;
 
+    /**
+     * Constructs the foundational title menu canvas, mapping responsive spatial backgrounds
+     * and binding translation bundles onto primary operational navigation buttons.
+     *
+     * @param mainWindow Core master window coordinator supervising primary view scene alterations
+     */
     public StartScreen(MainWindow mainWindow) {
         super(new StackPane());
         var root = (StackPane) getRoot();
@@ -29,7 +40,7 @@ public class StartScreen extends Scene {
         root.setAlignment(Pos.CENTER);
 
 
-        // this pane is to permit resizing of the window
+        // Resizeable space illustration backdrop layer constraint template
         var backgroundImagePane = new BackgroundImagePane(root, "milky-way-full-stars-space.jpg");
         root.getChildren().add(backgroundImagePane);
 
@@ -38,6 +49,7 @@ public class StartScreen extends Scene {
 
         Button newGameButton = new Button();
         newGameButton.textProperty().bind(localizedProperty("StartScreen.NEW_GAME"));
+        // Dispatch window routing layout swap triggers to fire campaign configurations setups
         newGameButton.setOnAction(_ -> mainWindow.switchToNewGameScene());
         Utility.setButtonStyle(newGameButton);
 
@@ -49,7 +61,12 @@ public class StartScreen extends Scene {
         root.getChildren().addAll(buttonBar);
     }
 
-
+    /**
+     * Fetches reactive localized resource bundle properties assigned to tracking string keys.
+     *
+     * @param name Target translation property identifier tag
+     * @return Localized text expression binding node
+     */
     public static ReadOnlyStringProperty localizedProperty(String name) {
         return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }

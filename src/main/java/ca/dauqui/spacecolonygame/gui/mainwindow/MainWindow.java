@@ -1,7 +1,6 @@
 package ca.dauqui.spacecolonygame.gui.mainwindow;
 
 import ca.dauqui.spacecolonygame.gamedata.Colony;
-import ca.dauqui.spacecolonygame.gamedata.StaticDataAssets;
 import ca.dauqui.spacecolonygame.gui.newgame.NewGameScene;
 import ca.dauqui.spacecolonygame.gui.startscreen.StartScreen;
 import ca.dauqui.spacecolonygame.localization.Localize;
@@ -10,6 +9,13 @@ import javafx.application.Application;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+/**
+ * Primary window controller and entry checkpoint for the application framework.
+ * Supervises the core stage lifecycle and manages transactional scene swaps between
+ * the main title dashboard and campaign setup scenes.
+ *
+ * @author Jean-François Quintal
+ */
 public class MainWindow extends Application {
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
@@ -18,21 +24,30 @@ public class MainWindow extends Application {
     private final StartScreen startScreen;
     private final NewGameScene newGameScene;
 
-    private final StaticDataAssets staticDataAssets;
     private Colony colony;
 
+    /**
+     * Pre-instantiates core application screen layers, linking mutual multi-tier references
+     * to support fluid cross-scene communication routines.
+     */
     public MainWindow() {
-        staticDataAssets = new StaticDataAssets();
         startScreen = new StartScreen(this);
         newGameScene = new NewGameScene(this);
 
     }
 
+    /**
+     * Initializes the master Stage framework, dynamically evaluating display boundaries
+     * to enforce maximize monitor limits, and mounts the default title screen context.
+     *
+     * @param stage The primary graphic canvas viewport provided by the JavaFX execution thread
+     */
     @Override
     public void start(Stage stage) {
         double maxScreenHeight = 0;
         double maxScreenWidth = 0;
 
+        // Iterate over active physical monitors to determine optimal visual sizing boundaries
         for (Screen screen : Screen.getScreens()) {
             if (maxScreenHeight < screen.getVisualBounds().getHeight()) {
                 maxScreenHeight = screen.getVisualBounds().getHeight();
@@ -54,10 +69,17 @@ public class MainWindow extends Application {
         primaryStage.show();
     }
 
+    /**
+     * Routes the active viewport layer back to the baseline home title dashboard screen.
+     */
     public void returnToStartScreen(){
         primaryStage.setScene(startScreen);
     }
 
+    /**
+     * Safely initiates campaign configuration flows, instantiating clean data registry models
+     * and forcing proportional container updates before executing structural view swaps.
+     */
     public void switchToNewGameScene() {
         if (colony != null && !colony.isSaved()) {
             // TODO asks and warn about the state of the save and that the current progress might be lost
@@ -70,11 +92,11 @@ public class MainWindow extends Application {
         newGameScene.startNewGame();
     }
 
+    /**
+     * @return The active core database domain layout model tracking current colony states
+     */
     public Colony getColony() {
         return colony;
     }
 
-    public StaticDataAssets getAssets(){
-        return staticDataAssets;
-    }
 }

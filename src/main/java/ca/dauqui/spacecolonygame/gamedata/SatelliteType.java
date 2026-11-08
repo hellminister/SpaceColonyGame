@@ -9,13 +9,34 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Immutable data configuration record managing global telemetry hardware
+ * and scanning probe profiles loaded from configuration registries.
+ * <p>
+ * Implements Localizable to dynamically link localized string properties
+ * matching tracking identification keys.
+ * </p>
+ *
+ * @param id      Unique alphanumeric token key identifying the satellite template type
+ * @param effects Unmodifiable verification set containing all functional probe traits unlocked by this hardware
+ * @param name    Reactive read-only string property tracking localized layout translation labels
+ *
+ * @author Jean-François Quintal
+ */
 @Localized
-public final class SatelliteType implements Localizable {
+public record SatelliteType(
+        String id,
+        Set<ProbeAndSatelliteEffect> effects,
+        ReadOnlyStringProperty name
+    ) implements Localizable {
     private static final Logger LOG = Logger.getLogger(SatelliteType.class.getName());
     private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/satelliteType.properties";
     private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
-    private static final TypesafeConstants<SatelliteType> registry = new TypesafeConstants<>(SatelliteType.class, CONFIG_PATH) {
+    /**
+     * Typesafe central registry loading and isolating structured configuration parameters from disk.
+     */
+    private static final TypesafeConstants<SatelliteType> registry = new TypesafeConstants<>(CONFIG_PATH) {
         @Override
         protected void parseProperties(Properties props, Map<String, SatelliteType> targetMap) {
             Set<String> processedPrefixes = new HashSet<>();
@@ -32,7 +53,7 @@ public final class SatelliteType implements Localizable {
                                 try {
                                     effects2.add(ProbeAndSatelliteEffect.valueOf(token.trim().toUpperCase()));
                                 } catch (IllegalArgumentException _) {
-                                    LOG.severe(() -> "Effet de sonde inconnu dans le fichier de config : " + token);
+                                    LOG.severe(() -> "Unknown ProbeAndSatelliteEffect: " + token);
                                 }
                             }
                         }
@@ -43,38 +64,42 @@ public final class SatelliteType implements Localizable {
             }
         }
 
-        @Override
-        protected void fallback(Map<String, SatelliteType> targetMap) {
-            // Pas de fallback nécessaire, ou possibilité d'ajouter une sonde "vide"
-        }
     };
 
+    /**
+     * Resolves a unique hardware template specification entry from the centralized data registry.
+     *
+     * @param id The target lookup alphanumeric identification key token string
+     * @return The matched matching immutable SatelliteType registration profile instance (null if missing)
+     */
     public static SatelliteType get(String id) {
         return registry.get(id.toUpperCase().trim());
     }
 
+    /**
+     * @return Complete unmodifiable collection snapshot holding all loaded hardware template definitions
+     */
     public static Collection<SatelliteType> getAll() {
         return registry.getAll();
     }
 
-    private final String id;
-    private final Set<ProbeAndSatelliteEffect> effects;
-    private final ReadOnlyStringProperty name;
-
+    /**
+     * Internal convenience builder constructor initializing transient structural properties
+     * and auto-wiring localized string layout bundle properties.
+     *
+     * @param id      The target alphanumeric identification key token
+     * @param effects The raw collection of data modifiers assigned to this profile
+     */
     private SatelliteType(String id, Set<ProbeAndSatelliteEffect> effects) {
-        this.id = id;
-        this.effects = Collections.unmodifiableSet(effects);
-        this.name = Localize.getProperty(ENUMS_BUNDLE, "SatelliteType." + id);
+        this(id, Collections.unmodifiableSet(effects), Localize.getProperty(ENUMS_BUNDLE, "SatelliteType." + id));
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public Set<ProbeAndSatelliteEffect> getEffects() {
-        return effects;
-    }
-
+    /**
+     * Verifies if this hardware profile triggers specific scanning capability traits.
+     *
+     * @param effect The targeted scanning technology condition parameter to verify
+     * @return True if the effect parameter resides inside the tracking capability set
+     */
     public boolean hasEffect(ProbeAndSatelliteEffect effect) {
         return effects.contains(effect);
     }
@@ -84,13 +109,9 @@ public final class SatelliteType implements Localizable {
         return name;
     }
 
-    public ReadOnlyStringProperty nameProperty() {
-        return name;
-    }
-
     @Override
     public String toString() {
-        return name.get();
+        return id;
     }
 
     @Override

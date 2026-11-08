@@ -1,8 +1,13 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
  * Enum representing the columns in the StarData.txt file
  * VERY IMPORTANT : the order of the enums MUST follow the order of the columns in the file
+ *
+ * @author Jean-François Quintal
  */
 public enum StarDataColumn {
     /** Object name */
@@ -19,7 +24,7 @@ public enum StarDataColumn {
     DIST,
     /** error on distance in percent (error also applies to X,Y,Z) */
     ERR,
-    /** space coordinates in light years: +X = towards galactic center */
+    /** space coordinates in light years: +X = towards galactic centre */
     X,
     /** space coordinates in light years: +Y = in direction of galactic rotation */
     Y,
@@ -59,5 +64,31 @@ public enum StarDataColumn {
     MINPLN,
     /** maximum of planets to generate above the ones already marked */
     MAXPLN
+    ;
+
+    /**
+     * Common static parsing worker engineered to map and sanitize raw database data row tokens.
+     * Centralizing this operation prevents code duplication across Asset records.
+     *
+     * @param dataStr The raw tokens sliced from a single database row entry
+     * @return A sanitized, ready-to-use EnumMap tracking column indices
+     */
+    public static Map<StarDataColumn, String> parseRow(String[] dataStr) {
+        Map<StarDataColumn, String> tempMap = new EnumMap<>(StarDataColumn.class);
+
+        for (StarDataColumn column : StarDataColumn.values()) {
+            // Safe bounds check to protect against shorter or truncated data lines on disk
+            String rawValue = (column.ordinal() < dataStr.length) ? dataStr[column.ordinal()] : "";
+            tempMap.put(column, rawValue != null ? rawValue.trim() : "");
+        }
+
+        // Apply specialized spectral replacement formatting rules if present
+        String spectrum = tempMap.get(StarDataColumn.SPEC);
+        if (spectrum != null && !spectrum.isEmpty()) {
+            tempMap.put(StarDataColumn.SPEC, spectrum.replace(" ", "-"));
+        }
+
+        return tempMap;
+    }
 
 }

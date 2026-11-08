@@ -2,35 +2,45 @@ package ca.dauqui.spacecolonygame.util;
 
 import javafx.scene.media.Media;
 
-import java.util.logging.Logger;
+import java.io.File;
+import java.net.URL;
 
 /**
- * This class serves as an image library so an image is loaded only once
+ * Micro-engineered asset library tracking heavy streamable cinematic video and audio media files.
+ * Leverages URI external forms to satisfy rigorous JavaFX Media streaming constraints.
  */
-public enum VideoLibrary {
+public enum VideoLibrary implements AssetLibrary<Media> {
     VIDEO_LIBRARY;
 
-    private static final Logger LOG = Logger.getLogger(VideoLibrary.class.getName());
+    private final ModdableResourceLoader<Media> loader = new ModdableResourceLoader<>("/ca/dauqui/spacecolonygame/video/") {
+        @Override
+        protected Media loadFromFile(File file) {
+            try {
+                // Media requires a properly structured file:// protocol URL format for external disk reading
+                return new Media(file.toURI().toString());
+            } catch (Exception _) {
+                return null;
+            }
+        }
 
-    private static final String VIDEO_LIBRARY_FILE_PATH = "src/main/resources/ca/dauqui/spacecolonygame/video/";
-
-
-    // stores the Videos from the common resources folder
-    private final SoftMapCache<String, Media> theLibrary;
-
-    VideoLibrary() {
-        theLibrary = new SoftMapCache<>();
-    }
+        @Override
+        protected Media loadFromJar(URL jarUrl, String fullJarPath) {
+            try {
+                return new Media(jarUrl.toExternalForm()); // Safe protocol mapping inside the compressed JAR
+            } catch (Exception _) {
+                return null;
+            }
+        }
+    };
 
     /**
-     * Returns a Video from a given name first looking in the story resources folder
-     * and if absent looking in the common resources folder
+     * Resolves a streamable video or background audio track component using custom plugin overrides.
      *
-     * @param imagePath the Video path and name following the Video folder
-     * @return the asked Video (might return null if the file doesn't exist)
+     * @param videoPath The relative filename target path (e.g., "cinematics/intro.mp4")
+     * @return The cached JavaFX Media instance, or null if lookups or streaming connections fail
      */
-    public Media getVideo(String imagePath) {
-        return theLibrary.computeIfAbsent(imagePath, key -> new Media(VIDEO_LIBRARY_FILE_PATH + key));
+    @Override
+    public Media getAsset(String videoPath) {
+        return loader.get(videoPath);
     }
-
 }

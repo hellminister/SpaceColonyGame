@@ -1,16 +1,21 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * This utility class is used to generate planets for a star system
+ * During the generation of the planets for a single star system,
+ * use 1 instance of this per star system to populate
+ */
 public final class PlanetGenerator {
-    private static double distanceGenerated = 0;
-    private static final Random rand = new Random();
+    private static final Random RAND = new Random();
 
+    /**
+     * an empty default planets for when no planet exists in the data
+     */
     private static final PlanetAsset DEFAULT_PLANET;
     static {
         String[] fakeData = new String[StarDataColumn.values().length];
@@ -20,67 +25,78 @@ public final class PlanetGenerator {
         DEFAULT_PLANET = new PlanetAsset(fakeData);
     }
 
-    private PlanetGenerator() {}
+    /**
+     * the distance calculated from the star for the current planet
+     */
+    private double distanceGenerated;
 
-    public static Planet generate(StarSystemAsset probed, PlanetAsset ps) {
-        double starLum = probed.getBolometricLum() == -1 ? 1.0 : probed.getBolometricLum();
-        double starMass = probed.getMass() == -1 ? 1.0 : probed.getMass();
+    public PlanetGenerator() {
+        distanceGenerated = -1;
+    }
+
+    /**
+     * The heart of the generator, this method will generate a planet
+     * @param probed The star system in which the planet will exist
+     * @param ps the existing planet data to be used for the planet (usually when once was detected in the star system irl)
+     * @return a fully generated planet
+     */
+    @SuppressWarnings("java:S3776") // trying to reduce cognitive complexity of this comprehensible method would raise overall complexity of the class
+    public Planet generate(StarSystemAsset probed, PlanetAsset ps) {
+        double starLum = probed.bolometricLum() == -1 ? 1.0 : probed.bolometricLum();
+        double starMass = probed.mass() == -1 ? 1.0 : probed.mass();
         double distance = nextDistance(starLum);
         double receivedLight = starLum / Math.pow(distance, 2);
 
         String type = ps.getType().replace("?", "");
         String radiusUnit = ps.getRadiusUnit().replace("?", "");
 
-        double radiusD = ps.getRadius();
-        if (radiusD == -1) {
-            double roll = rand.nextDouble();
+        double radius = ps.getRadius();
+        if (radius == -1) {
+            double roll = RAND.nextDouble();
             if (roll < 0.6) {
                 type = "PT";
                 radiusUnit = "Re";
-                radiusD = rand.nextDouble(0.4, 2.0);
+                radius = RAND.nextDouble(0.4, 2.0);
             } else if (roll < 0.9) {
                 type = "PN";
                 radiusUnit = "Rj";
-                radiusD = rand.nextDouble(3.0, 5.0);
+                radius = RAND.nextDouble(3.0, 5.0);
             } else {
                 type = "PJ";
                 radiusUnit = "Rj";
-                radiusD = rand.nextDouble(6.0, 11.0);
+                radius = RAND.nextDouble(6.0, 11.0);
             }
         }
 
+        // if the type is undefined, choose the planet type based on the planets radius
         if ("-".equals(type)) {
-            type = radiusD < 2.2 ? "PT" : (radiusD < 6.0 ? "PN" : "PJ");
+            if (radius < 2.2) {
+                type = "PT";
+            } else if (radius < 6.0) {
+                type = "PN";
+            } else{
+                type = "PJ";
+            }
             radiusUnit = "PT".equals(type) ? "Re" : "Rj";
         }
 
-        double density = type.equals("PT") ? rand.nextDouble(4.0, 5.8) : rand.nextDouble(0.7, 1.8);
-        double mass = type.equals("PT") ? Math.pow(radiusD, 3) * (density / 5.51) : Math.pow(radiusD, 3) * density * 317.8;
-        double radiusInEarthUnits = type.equals("PT") ? radiusD : radiusD * 11.209;
-        double gravityD = mass / Math.pow(radiusInEarthUnits, 2);
+        double density = type.equals("PT") ? RAND.nextDouble(4.0, 5.8) : RAND.nextDouble(0.7, 1.8);
 
-        // 3. Activité Volcanique continue (0.0 = Éteint, 1.0 = Io / Enfer magmatique)
+        double mass = type.equals("PT") ? Math.pow(radius, 3) * (density / 5.51) : Math.pow(radius, 3) * density * 317.8;
+
+        double radiusInEarthUnits = type.equals("PT") ? radius : radius * 11.209;
+
+        double gravity = mass / Math.pow(radiusInEarthUnits, 2);
+
         double volcanism = generateVolcanism(type, radiusInEarthUnits);
+
         TectonicType tectonic = generateTectonics(type, radiusInEarthUnits, volcanism);
 
-        double albedo = type.equals("PT") ? rand.nextDouble(0.1, 0.4) : rand.nextDouble(0.3, 0.6);
-        if (distance > 3.0 && type.equals("PT")) albedo += 0.25;
+        double albedo = generateAlbedo(type, distance);
 
         double tempEquilibrium = 278.0 * Math.pow(((1.0 - albedo) * starLum) / Math.pow(distance, 2), 0.25);
 
-        DoubleProperty radius = new SimpleDoubleProperty(radiusD);
-        DoubleProperty gravity = new SimpleDoubleProperty(gravityD);
-        AtmosphereComposition atmosphereComposition = new AtmosphereComposition(gravity, radius, radiusUnit);
-
-
-        // L'atmosphère prend désormais le double continu pour son calcul de dégazage
-        double temperature = generateAtmosphere(type, atmosphereComposition, gravityD, radiusD, radiusUnit, tempEquilibrium, volcanism);
-
-        // 4. Intensité Magnétique continue (Proportionnelle à la masse et rotation/chaleur interne)
-        double magneticField = generateMagnetosphere(mass, volcanism, type);
-
         double orbitalPeriodDays = Math.sqrt(Math.pow(distance, 3) / starMass) * 365.25;
-        double axisTilt = rand.nextDouble() < 0.85 ? rand.nextDouble(0.0, 30.0) : rand.nextDouble(30.0, 90.0);
 
         double rotationPeriodHours;
         boolean isTidallyLocked = false;
@@ -89,244 +105,374 @@ public final class PlanetGenerator {
             rotationPeriodHours = orbitalPeriodDays * 24.0;
             isTidallyLocked = true;
         } else {
-            rotationPeriodHours = type.equals("PT") ? rand.nextDouble(10.0, 40.0) : rand.nextDouble(8.0, 18.0);
-            if (rand.nextDouble() > 0.96 && type.equals("PT")) rotationPeriodHours += rand.nextDouble(100.0, 4000.0);
+            rotationPeriodHours = type.equals("PT") ? RAND.nextDouble(10.0, 40.0) : RAND.nextDouble(8.0, 18.0);
+            if (RAND.nextDouble() > 0.96 && type.equals("PT")){
+                rotationPeriodHours += RAND.nextDouble(100.0, 4000.0);
+            }
         }
 
-        double finalTemperature = temperature;
-        if (isTidallyLocked) finalTemperature -= 15.0;
+        AtmosphereComposition atmosphereComposition = new AtmosphereComposition(gravity, radius, radiusUnit, tempEquilibrium, isTidallyLocked);
 
-        // Calcul final des sites basé sur les nouvelles propriétés réactives globales
-        int calculatedSites = calculateAvailableSites(type, radiusD, radiusUnit, gravityD, finalTemperature, volcanism, receivedLight, tectonic, atmosphereComposition, magneticField);
+        generateAtmosphere(type, atmosphereComposition, gravity, radius, radiusUnit, tempEquilibrium, volcanism);
 
-        // Ré-injection propre des sites calculés dans l'instance
+        double magneticField = generateMagnetosphere(mass, volcanism, type);
+
+        double axisTilt = RAND.nextDouble() < 0.85 ? RAND.nextDouble(0.0, 30.0) : RAND.nextDouble(30.0, 90.0);
+
+
+        int calculatedSites = calculateAvailableSites(type, radius, volcanism, tectonic, atmosphereComposition, magneticField);
+
         return new Planet(type, radius, radiusUnit, mass, gravity,
-                finalTemperature, distance,
+                tempEquilibrium, distance,
                 albedo, orbitalPeriodDays, rotationPeriodHours, axisTilt, isTidallyLocked,
-                atmosphereComposition, tectonic, volcanism, magneticField, receivedLight, calculatedSites);
+                receivedLight, calculatedSites, atmosphereComposition, tectonic, volcanism, magneticField);
     }
 
-    private static double generateVolcanism(String type, double radiusInEarthUnits) {
-        if (!"PT".equals(type)) return 0.0; // Pas de surface rocheuse pour les géantes gazeuses
-        if (radiusInEarthUnits < 0.5) return rand.nextDouble(0.01, 0.04); // Corps froids (Lune/Mars à ~0.03 W/m²)
-
-        // Planètes actives : de 0.05 à 0.30 W/m² en moyenne, avec une chance de super-volcanisme (type Io) jusqu'à 2.5 W/m²
-        double baseFlux = 0.05 + (radiusInEarthUnits * 0.1);
-        if (rand.nextDouble() > 0.92) {
-            return baseFlux + rand.nextDouble(1.0, 2.5); // Anomalie gravitationnelle / Effet de marée intense
+    /**
+     * Determines planetary reflectivity parameters based on surface taxonomy and stellar proximity.
+     * @param type The type of the planet
+     * @param distance the distance between the planet and the star
+     * @return the calculated albedo
+     */
+    private static double generateAlbedo(String type, double distance) {
+        double albedo;
+        if ("PT".equals(type)){
+            albedo = RAND.nextDouble(0.1, 0.4);
+            // Frost line adjustment: telluric worlds covered in volatile ices reflect more light
+            if (distance > 3.0){
+                albedo += 0.25;
+            }
+        } else if ("PN".equals(type)) {
+            // Ice giant have naturally high and stable albedo
+            albedo = RAND.nextDouble(0.35, 0.55);
+        }else {
+            albedo = distance < 0.5 ? RAND.nextDouble(0.05, 0.2) : RAND.nextDouble(0.3, 0.6);
         }
-        return baseFlux + rand.nextDouble(0.0, 0.15);
+
+        // clamping the value to be sure it stays within possible values
+        return Math.clamp(albedo, 0.0, 1.0);
     }
 
+    /**
+     * Generates the volcanism level of a planet ranging from 0.0 to more than 2.5 W/m²
+     * @param type the type of the planet
+     * @param radiusInEarthUnits the radius of the planet
+     * @return the volcanism level in W/m²
+     */
+    private static double generateVolcanism(String type, double radiusInEarthUnits) {
+        if (!"PT".equals(type)) {
+            return 0.0; // no rocky surface for gas giants
+        }
+        if (radiusInEarthUnits < 0.5) {
+            return RAND.nextDouble(0.01, 0.04); // cold bodies (Moon/Mars at ~0.03 W/m²)
+        }
+
+        // Active planets : from 0.05 to 0.30 W/m² in average, with a chance of super volcanism up to 2.5 W/m²
+        double baseFlux = 0.05 + (radiusInEarthUnits * 0.1);
+        if (RAND.nextDouble() > 0.92) {
+            return baseFlux + RAND.nextDouble(1.0, 2.5); // gravitational anomaly
+        }
+        return baseFlux + RAND.nextDouble(0.0, 0.15);
+    }
+
+    /**
+     *  generate the type of tectonic activity
+     * @param type the type of the planet
+     * @param radiusInEarthUnits the radius of the planet
+     * @param volcanism the volcanism level of the planet in W/m²
+     * @return the type of tectonic activity for the planet
+     */
     private static TectonicType generateTectonics(String type, double radiusInEarthUnits, double volcanism) {
-        if (!"PT".equals(type)) return TectonicType.NONE;
-        // La tectonique dépend du flux thermique (volcanism)
+        if (!"PT".equals(type)) {
+            return TectonicType.NONE;
+        }
+
         if (radiusInEarthUnits > 0.6 && volcanism > 0.12) {
             return volcanism > 1.0 ? TectonicType.EXTREME : TectonicType.ACTIVE;
         }
         return TectonicType.NONE;
     }
 
+    /**
+     * generate the magnetosphere strength for the planet
+     * @param mass the mass of the planet
+     * @param volcanism the volcanic activity of the planet
+     * @param type the type of the planet
+     * @return the Magnetosphere strength of the planet in M_E
+     */
     private static double generateMagnetosphere(double mass, double volcanism, String type) {
         if (!"PT".equals(type)){
-            return mass * 15.0; // Les géantes gazeuses ont des magnétosphères massives (ex: Jupiter)
+            return mass * 15.0; // gas giants have immense magnetosphere
         }
         if (mass < 0.1 || volcanism < 0.04){
-            return 0.0; // Noyau solidifié ou trop petit
+            return 0.0; // Solidified or insufficient core size: planetary dynamo is inactive
         }
 
-        // Dynamo planétaire : dépend de la masse (noyau de fer) et de l'énergie thermique résiduelle
-        return mass * (volcanism / 0.1) * rand.nextDouble(0.7, 1.3);
+        // Planetary dynamo: depends on mass (iron core) and residual thermal energy
+        return mass * (volcanism / 0.1) * RAND.nextDouble(0.7, 1.3);
     }
 
-    private static double generateAtmosphere(String type, AtmosphereComposition composition, double gravity, double radius, String radiusUnit, double tempEquilibrium,
+    /**
+     * generate the Atmosphere by choosing each gas and amount of it
+     * @param type the type of the planet
+     * @param composition The resulting Atmospheric Composition
+     * @param gravity the gravity of the planet
+     * @param radius the radius of the planet
+     * @param radiusUnit the units of the radius (in earth or jupiter ratio)
+     * @param tempEquilibrium the equilibrium temperature of the planet
+     * @param volcanism the volcanic activity of the planet
+     */
+    private static void generateAtmosphere(String type, AtmosphereComposition composition, double gravity, double radius, String radiusUnit, double tempEquilibrium,
                                              double volcanism) {
-        // Crée l'instance de composition réactive (on passe deux fois la gravité pour le constructeur)
 
+        // Generate the atmosphere for a gas giant
         if (!"PT".equals(type)) {
-            // GÉANTES GAZEUSES : Injection du cocktail primordial d'Hydrogène et d'Hélium
-            List<AtmosphereGazType> nativeGases = AtmosphereGazType.findGasGiantAtmospheres();
-            double gasGiantBaseMass = rand.nextDouble(50000.0, 500000.0);
-
-            for (AtmosphereGazType gas : nativeGases) {
-                if ("HYDROGEN".equals(gas.getId())) {
-                    composition.addGaz(gas, gasGiantBaseMass * rand.nextDouble(0.70, 0.85));
-                } else if ("HELIUM".equals(gas.getId())) {
-                    composition.addGaz(gas, gasGiantBaseMass * rand.nextDouble(0.15, 0.25));
-                }
-            }
-            return tempEquilibrium;
+            generateGasGiantAtmosphere(composition);
+        } else if (gravity > 0.20 && tempEquilibrium < 500) {
+            generateTelluricPlanetAtmosphere(composition, gravity, radius, radiusUnit, tempEquilibrium, volcanism);
         }
 
-        // PLANÈTES TELLURIQUES : Rétention selon la température d'équilibre
-        if (gravity > 0.20 && tempEquilibrium < 500) {
-            List<AtmosphereGazType> compList = new ArrayList<>(AtmosphereGazType.findTelluricAtmosphere(tempEquilibrium));
+    }
 
-            if (compList.isEmpty()) {
-                return tempEquilibrium;
+    /**
+     * generate the Atmosphere for a telluric planet by choosing each gas and amount of it
+     * @param composition The resulting Atmospheric Composition
+     * @param gravity the gravity of the planet
+     * @param radius the radius of the planet
+     * @param radiusUnit the units of the radius (in earth or jupiter ratio)
+     * @param tempEquilibrium the equilibrium temperature of the planet
+     * @param volcanism the volcanic activity of the planet
+     */
+    private static void generateTelluricPlanetAtmosphere(AtmosphereComposition composition, double gravity, double radius, String radiusUnit, double tempEquilibrium,
+                                                      double volcanism) {
+        List<AtmosphereGasType> compList = new ArrayList<>(AtmosphereGasType.findTelluricAtmosphere(tempEquilibrium));
+
+        if (compList.isEmpty()) {
+            return;
+        }
+
+        // Sorted by molecular weight with a slight geological noise (+/- 5 g/mol)
+        compList.sort((g1, g2) -> {
+            double weight1 = g1.molecularWeight() + RAND.nextDouble(-5.0, 5.0);
+            double weight2 = g2.molecularWeight() + RAND.nextDouble(-5.0, 5.0);
+            return Double.compare(weight2, weight1); // in reverse order
+        });
+
+        // Defining the physical target pressure parameters
+        double maxPressure = Math.pow(gravity, 2) * 4.0;
+        double baselinePressure = RAND.nextDouble(0.01, maxPressure);
+
+        if (volcanism > 1.0) {
+            baselinePressure += RAND.nextDouble(2.0, 5.0); // Runaway volcanism (Type Venus)
+        } else if (volcanism > 0.15) {
+            baselinePressure += RAND.nextDouble(0.1, 1.5);
+        }
+
+        // calculate the planet surface size
+        double conversionValue = "Re".equals(radiusUnit) ? 6371000.0 : 69911000.0;
+        double estimatedSurfaceArea = 4.0 * Math.PI * Math.pow(radius * conversionValue, 2);
+
+        // needed gas mass for target pressure
+        double targetedRawMass = (baselinePressure * estimatedSurfaceArea * 100000.0) / gravity;
+
+        double remainingPercentage = 1.0;
+
+        for (int i = 0; i < compList.size() - 1 && remainingPercentage > 0.001; i++) {
+            double share = RAND.nextDouble(remainingPercentage * 0.40, remainingPercentage * 0.75);
+            share = Math.round(share * 100.0) / 100.0;
+
+            if (share > 0.0) {
+                composition.addGas(compList.get(i), targetedRawMass * share);
+                remainingPercentage -= share;
             }
+        }
 
-            // Tri par poids moléculaire avec un léger bruit géologique (+/- 5 g/mol)
-            compList.sort((g1, g2) -> {
-                double weight1 = g1.getMolecularWeight() + rand.nextDouble(-5.0, 5.0);
-                double weight2 = g2.getMolecularWeight() + rand.nextDouble(-5.0, 5.0);
-                return Double.compare(weight2, weight1); // Décroissant
-            });
+        // the lightest gas takes what is left
+        double finalShare = Math.round(remainingPercentage * 100.0) / 100.0;
+        if (finalShare > 0.0) {
+            composition.addGas(compList.getLast(), targetedRawMass * finalShare);
+        }
+    }
 
-            // Définition de la cible de pression physique
-            double maxPressure = Math.pow(gravity, 2) * 4.0;
-            double baselinePressure = rand.nextDouble(0.01, maxPressure);
+    /**
+     * generates the atmosphere of a gas giant
+     * @param composition The resulting Atmospheric Composition
+     */
+    private static void generateGasGiantAtmosphere(AtmosphereComposition composition) {
+        List<AtmosphereGasType> nativeGases = AtmosphereGasType.findGasGiantAtmospheres();
+        double gasGiantBaseMass = RAND.nextDouble(50000.0, 500000.0);
 
-            if (volcanism > 1.0) {
-                baselinePressure += rand.nextDouble(2.0, 5.0); // Runaway volcanique (Type Vénus)
-            } else if (volcanism > 0.15) {
-                baselinePressure += rand.nextDouble(0.1, 1.5);
+        // FAILSAFE: If database configurations are completely empty, retrieve ANY available gas as fallback
+        if (nativeGases.isEmpty()) {
+            Collection<AtmosphereGasType> allGases = AtmosphereGasType.getAtmosphereGazTypes();
+            if (!allGases.isEmpty()) {
+                nativeGases = List.of(allGases.iterator().next());
             }
+        }
 
-            double conversionValue = "Re".equals(radiusUnit) ? 6371000.0 : 69911000.0;
-            double estimatedSurfaceArea = 4.0 * Math.PI * Math.pow(radius * conversionValue, 2);
-
-            // Masse requise = (Pression cible * Surface * 100000) / Gravité
-            double targetedRawMass = (baselinePressure * estimatedSurfaceArea * 100000.0) / gravity;
-
+        if (!nativeGases.isEmpty()) {
             double remainingPercentage = 1.0;
 
-            for (int i = 0; i < compList.size() - 1 && remainingPercentage > 0.001; i++) {
-                double share = rand.nextDouble(remainingPercentage * 0.40, remainingPercentage * 0.75);
-                share = Math.round(share * 100.0) / 100.0;
+            // Loop through all but the last native gas to distribute mass dynamically
+            for (int i = 0; i < nativeGases.size() - 1; i++) {
+                AtmosphereGasType gas = nativeGases.get(i);
+                double share;
 
-                if (share > 0.0) {
-                    composition.addGaz(compList.get(i), targetedRawMass * share);
-                    remainingPercentage -= share;
+                // Adaptive allocation: use explicit targets if core elements exist, fallback to dynamic slices
+                if ("HYDROGEN".equals(gas.id())) {
+                    share = RAND.nextDouble(0.70, 0.82);
+                } else if ("HELIUM".equals(gas.id())) {
+                    share = RAND.nextDouble(0.15, 0.25);
+                } else {
+                    // Dynamically scale unknown or modded gases based on the remaining atmospheric budget
+                    share = RAND.nextDouble(remainingPercentage * 0.10, remainingPercentage * 0.40);
                 }
+
+                // Strict mathematical safeguard to never overshoot the remaining budget parameters
+                share = Math.clamp(share, 0.0, remainingPercentage);
+                composition.addGas(gas, gasGiantBaseMass * share);
+                remainingPercentage -= share;
             }
 
-            // Le gaz le plus léger restant prend le résidu mathématique
-            double finalShare = Math.round(remainingPercentage * 100.0) / 100.0;
-            if (finalShare > 0.0) {
-                composition.addGaz(compList.getLast(), targetedRawMass * finalShare);
+            // The final gas in the tracked registry absorbs the absolute mathematical residual (guarantees exactly 100%)
+            if (remainingPercentage > 0.0) {
+                composition.addGas(nativeGases.getLast(), gasGiantBaseMass * remainingPercentage);
             }
-
-            // Application de l'effet de serre global calculé en temps réel par ton DoubleBinding
-            double greenhouseMultiplier = 1.0 + (Math.log1p(composition.getPressure()) * (composition.getGreenhouseFactor() / 100.0));
-            return (tempEquilibrium * greenhouseMultiplier);
         }
-
-        // Monde mort ou sans air
-        return tempEquilibrium;
     }
 
-    private static int calculateAvailableSites(String type, double radius, String radiusUnit,
-                                               double gravity, double temperature,
-                                               double volcanism, double receivedLight,
+    /**
+     * calculate the number of available sites for colonization on a given planet
+     * @param type the type of planet
+     * @param radius the radius of the planet
+     * @param volcanism the volcanic activity of the planet
+     * @param tectonic the tectonic activity of the planet
+     * @param atmosphere the atmosphere composition of the planet
+     * @param magneticField the magnetic field strength of the planet
+     * @return the number of available site on the planet
+     */
+    // the code reads easily and the division would simply add unnecessary overhead in the method,
+    // Might review this if we complexify the calculations
+    @SuppressWarnings("java:S3776")
+    private static int calculateAvailableSites(String type, double radius,
+                                               double volcanism,
                                                TectonicType tectonic, AtmosphereComposition atmosphere,
                                                double magneticField) {
-        // 1. FILTRE RADICAL : Les géantes n'ont pas de sol solide
+
+        // 1. Gas giant doesn't have any available site
         if (!"PT".equalsIgnoreCase(type)) {
             return 0;
         }
 
-        // 2. SURFACE DE BASE SELON LE RAYON (Radius)
+        double temperature = atmosphere.getSurfaceTemperature();
+
+        // 2. PANET SIZE : calculate a starting number of available sites based on the radius
         int baseSites = 3;
 
+        //unit is automatically Re since there are no gas giants here
         if (radius > 1.4) {
             baseSites = 6;
         } else if (radius < 0.4) {
             baseSites = 1;
         }
 
-        int sites = baseSites + rand.nextInt(1, 4); // Jet aléatoire de base (+1 à +3)
+        int sites = baseSites + RAND.nextInt(1, 4);
 
-        // 3. FACTEUR TECTONIQUE : Stabilité structurelle du sol
+        // 3. TECTONICS : stability of the ground
         if (tectonic == TectonicType.EXTREME) {
-            sites = Math.max(1, sites - rand.nextInt(3, 5));
+            sites = Math.max(1, sites - RAND.nextInt(3, 5));
         } else if (tectonic == TectonicType.ACTIVE) {
-            sites = Math.max(1, sites - rand.nextInt(1, 3));
+            sites = Math.max(1, sites - RAND.nextInt(1, 3));
         }
 
-        // 4. FACTEUR CHAMP MAGNÉTIQUE : Bouclier anti-radiations (Nouveauté)
+        // 4. MAGNETIC FIELD : Anti-radiation shield
         if (magneticField < 0.2) {
-            // Champ magnétique faible ou inexistant (ex: Mars/Lune) -> Bombardement de radiations intenses.
-            // Les dômes ouverts sont exclus, forçant à chercher uniquement des sites abrités (canyons, grottes).
-            sites = Math.max(1, sites - rand.nextInt(2, 4));
+            // Weak or non-existent magnetic field (e.g., Mars/Moon) -> Intense radiation bombardment.
+            // Open domes are excluded, forcing to look only for sheltered sites (canyons, caves).
+            sites = Math.max(1, sites - RAND.nextInt(2, 4));
         } else if (magneticField >= 1.0 && magneticField <= 2.5) {
-            // Bouclier magnétique idéal similaire à la Terre -> Protection maximale de la surface.
-            sites += rand.nextInt(1, 4); // Bonus de sites exploitables en plaine dégagée
+            // Ideal magnetic shield similar to Earth -> Maximum surface protection.
+            sites += RAND.nextInt(1, 4);
         } else if (magneticField > 5.0) {
-            // Champ magnétique hyper-puissant (Mondes métalliques ou résidus magnétiques intenses) ->
-            // Crée des tempêtes magnétiques qui grillent les systèmes de guidage des navettes d'atterrissage.
-            sites = Math.max(1, sites - rand.nextInt(1, 3));
+            // Hyper-intense magnetic field (metallic worlds or intense magnetic remnants) ->
+            // Creates magnetic storms that fry landing shuttle guidance systems.
+            sites = Math.max(1, sites - RAND.nextInt(1, 3));
         }
 
-        // 5. FACTEUR ATMOSPHÉRIQUE : Toxicité et Corrosion du Gamedata
-        if (atmosphere != null && atmosphere.getPressure() > 0.0) {
+        // 5. ATMOSPHERIC COMPOSITION : toxicity and corrosiveness
+        if (atmosphere.getPressure() > 0.0) {
             double corrosiveness = atmosphere.getCorrosiveness();
             double toxicity = atmosphere.getToxicity();
 
             if (corrosiveness > 0.5) {
-                sites = Math.max(1, sites - rand.nextInt(2, 4));
+                sites = Math.max(1, sites - RAND.nextInt(2, 4));
             } else if (corrosiveness > 0.0) {
                 sites = Math.max(1, sites - 1);
             }
 
             if (toxicity > 0.7) {
-                sites = Math.max(1, sites - rand.nextInt(1, 3));
+                sites = Math.max(1, sites - RAND.nextInt(1, 3));
             }
         }
 
-        // 6. TEMPÉRATURE & VOLCANISME
+        // 6. TEMPERATURE & VOLCANISM
         if (temperature > 500 || temperature < -180) {
-            sites = Math.max(1, sites - rand.nextInt(2, 4));
+            sites = Math.max(1, sites - RAND.nextInt(2, 4));
         } else if (temperature >= -20 && temperature <= 40) {
-            sites += rand.nextInt(2, 5);
+            sites += RAND.nextInt(2, 5);
         }
 
         if (volcanism > 0.75) {
-            sites = Math.max(1, sites - rand.nextInt(2, 4));
+            sites = Math.max(1, sites - RAND.nextInt(2, 4));
         } else if (volcanism > 0.10 && volcanism < 0.35) {
-            sites += rand.nextInt(1, 3);
+            sites += RAND.nextInt(1, 3);
         }
 
-        // 7. GARDE-FOU PHYSIQUE STRICT POUR L'UI (Toujours entre 1 et 20 pour les telluriques)
+        // 7. minimum of 1 site and maximum of 20 site on a rocky planet
         return Math.clamp(sites, 1, 20);
     }
 
-    public static Planet generate(StarSystemAsset probed) { return generate(probed, DEFAULT_PLANET); }
+    /**
+     * The heart of the generator, this method will generate a planet
+     * @param probed The star system in which the planet will exist
+     * @return a fully generated planet
+     */
+    public Planet generate(StarSystemAsset probed) { return generate(probed, DEFAULT_PLANET); }
 
-    public static void start() {
-        // to detect if it is the first planet being placed
-        distanceGenerated = -1.0;
-    }
-
-    private static double nextDistance(double starLuminosity) {
-        // Calcule la limite interne de la zone d'accrétion (la zone minimale viable autour de l'étoile)
+    /**
+     * calculate the distance of the planet to the star
+     * @param starLuminosity the luminosity of the star
+     * @return the distance between the planet and the star
+     */
+    private double nextDistance(double starLuminosity) {
+        // Computes the inner boundary of the accretion disc (the minimum viable zone around the star)
         double innerBoundary = 0.04 * Math.sqrt(starLuminosity);
-        innerBoundary = Math.max(0.05, innerBoundary); // Garde-fou physique global
+        innerBoundary = Math.max(0.05, innerBoundary); // Global physical safeguard
 
         if (distanceGenerated < 0) {
-            // PREMIÈRE PLANÈTE : Positionnée très proche du bord interne pour peupler la zone < 0.4 AU
+            // FIRST PLANET: Positioned very close to the inner edge to populate the < 0.4 AU zone
             double max = 0.15 * Math.sqrt(starLuminosity);
             double origin = Math.min(0.02, max);
             double bound = Math.max(0.02, max);
             if (Double.compare(origin, bound) == 0) {
-                bound += 0.1; // Assure un intervalle valide si origin == bound
+                bound += 0.1; // Guarantees a valid interval if origin == bound
             }
 
-            distanceGenerated = innerBoundary + rand.nextDouble(origin, bound);
+            distanceGenerated = innerBoundary + RAND.nextDouble(origin, bound);
             return distanceGenerated;
         }
 
-        // PLANÈTES SUIVANTES : Écartement géométrique (multiplicateur)
-        // Les systèmes compacts (étoiles faibles) s'écartent moins vite que les étoiles massives
+        // SUBSEQUENT PLANETS: Geometric spacing (multiplier)
+        // Compact systems (faint stars) spread out more slowly than massive stars
         double minMultiplier = starLuminosity < 0.1 ? 1.2 : 1.3;
         double maxMultiplier = starLuminosity < 0.1 ? 1.5 : 2.1;
 
-        double multiplier = rand.nextDouble(minMultiplier, maxMultiplier);
+        double multiplier = RAND.nextDouble(minMultiplier, maxMultiplier);
 
-        // Ajout d'un léger décalage aléatoire linéaire pour casser la rigidité parfaite de la loi
-        double jitter = rand.nextDouble(0.01, 0.1) * Math.sqrt(starLuminosity);
+        // Adds a slight randomized linear offset to break the perfect rigidity of the law
+        double jitter = RAND.nextDouble(0.01, 0.1) * Math.sqrt(starLuminosity);
 
-        // Nouvelle distance = (Ancienne distance * Multiplicateur géométrique) + Jitter
+        // New distance = (Previous distance * Geometric multiplier) + Jitter
         distanceGenerated = (distanceGenerated * multiplier) + jitter;
 
         return distanceGenerated;

@@ -1,13 +1,15 @@
-package ca.dauqui.spacecolonygame.gui.newgame;
+package ca.dauqui.spacecolonygame.gui.newgame.starselectionscreen;
 
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystemAsset;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
+import ca.dauqui.spacecolonygame.gui.newgame.InfoGrid;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.HPos;
@@ -24,6 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Main layout controller orchestrating the stellar system exploration phase.
+ * Coordinates data telemetry display matrices and tracks tactical probe deployment manifests.
+ *
+ * @author Jean-François Quintal
+ */
 public class StarSelectionScreen extends GridPane {
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
@@ -33,6 +41,14 @@ public class StarSelectionScreen extends GridPane {
     private final Map<StarSystemAsset, StarSystem> probedSystems;
     private final StarList stars;
 
+    /**
+     * Initializes structural constraints, builds text-binding layout pipelines,
+     * and positions interface component boxes on the viewport grid matrix.
+     *
+     * @param mainWindow        Core master frame container driving primary view states
+     * @param launchProbeAction Operational logic handler mapping probe deployment validation
+     * @param launchShipAction  Operational logic handler mapping colonist vessel launching gates
+     */
     public StarSelectionScreen(MainWindow mainWindow, Launch launchProbeAction, Launch launchShipAction) {
         probedSystems = new HashMap<>();
 
@@ -66,7 +82,7 @@ public class StarSelectionScreen extends GridPane {
         starListBox.setAlignment(Pos.CENTER);
         Label starListLabel = Utility.createLabel(localizedProperty("StarSelectionScreen.STAR_LIST_LABEL"));
 
-        stars = new StarList(mainWindow.getAssets().getStarSystems(), MAX_SELECTED_STARS, starNodes, preselection);
+        stars = new StarList(StarSystemAsset.getSortedStarSystemAssets(), MAX_SELECTED_STARS, starNodes, preselection);
 
         Label probes = Utility.createLabel(localizedProperty("StarSelectionScreen.PROBES_LEFT"));
         probes.textProperty().unbind();
@@ -121,37 +137,37 @@ public class StarSelectionScreen extends GridPane {
         solarUnit.textProperty().bind(localizedProperty("StarSelectionScreen.TOOLTIP_SOLAR_UNIT"));
 
 
-        starInfosGrid.addInfo(0, 0, localizedProperty("StarSelectionScreen.SPECTRAL_LABEL"), stars.getSelection(), StarSystemAsset::getSpectralType);
+        starInfosGrid.addInfo(0, 0, localizedProperty("StarSelectionScreen.SPECTRAL_LABEL"), stars.getSelection(), StarSystemAsset::spectralType);
 
         Label mass = starInfosGrid.addInfo(1, 0, localizedProperty("StarSelectionScreen.MASS_LABEL"), stars.getSelection(), star -> String.format("%.2f",
-                star.getMass()));
+                star.mass()));
         mass.setTooltip(solarUnit);
 
         starInfosGrid.addInfo(0,1, localizedProperty("StarSelectionScreen.DISTANCE_LABEL"), stars.getSelection(),
-                star -> String.format("%.4f", star.getDistance()));
+                star -> String.format("%.4f", star.distance()));
 
         starInfosGrid.addInfo(1, 1, localizedProperty("StarSelectionScreen.MAIN_SHIP_TRAVEL_LABEL"), stars.getSelection(),
-                star -> String.format("%.2f", star.getDistance()/0.30));
+                star -> String.format("%.2f", star.distance()/0.30));
 
         starInfosGrid.addInfo(0, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRAVEL_LABEL"), stars.getSelection(),
-                star -> String.format("%.2f", star.getDistance()/0.005));
+                star -> String.format("%.2f", star.distance()/0.005));
 
         starInfosGrid.addInfo(1, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRANSIT_SURVIVAL_LABEL"), stars.getSelection(),
-                star -> String.format("%.4f %%", (1/((star.getDistance()-40)*0.00061) + 110)));
+                star -> String.format("%.4f %%", (1/((star.distance()-40)*0.00061) + 110)));
 
         Label visualLum = starInfosGrid.addInfo(0, 3, localizedProperty("StarSelectionScreen.VISUAL_LUM_LABEL"), stars.getSelection(),
-                star -> String.format("%.4f", star.getVisualLum()));
+                star -> String.format("%.4f", star.visualLum()));
         visualLum.setTooltip(solarUnit);
 
         Label bolometricLum = starInfosGrid.addInfo(1, 3, localizedProperty("StarSelectionScreen.BOLOMETRIC_LUM_LABEL"), stars.getSelection(),
-                star -> String.format("%.4f", star.getBolometricLum()));
+                star -> String.format("%.4f", star.bolometricLum()));
         bolometricLum.setTooltip(solarUnit);
 
         starInfosGrid.addInfo(0, 4, localizedProperty("StarSelectionScreen.TEFF_LABEL"), stars.getSelection(),
-                star -> String.format("%.0f K", star.getTeff()));
+                star -> String.format("%.0f K", star.teff()));
 
         Label radius = starInfosGrid.addInfo(1, 4, localizedProperty("StarSelectionScreen.RADIUS_LABEL"), stars.getSelection(),
-                star -> String.format("%.3f", star.getRadius()));
+                star -> String.format("%.3f", star.radius()));
         radius.setTooltip(solarUnit);
 
         starInfosGrid.addInfo(0, 5, localizedProperty("StarSelectionScreen.NUM_KNOWN_PLANETS"), stars.getSelection(),
@@ -195,8 +211,8 @@ public class StarSelectionScreen extends GridPane {
 
         stars.getSelection().addListener((_, _, newValue) -> {
             if (newValue != null) {
-                description.textProperty().bind(newValue.descriptionProperty());
-                starNameLabel.textProperty().bind(newValue.nameProperty());
+                description.textProperty().bind(newValue.description());
+                starNameLabel.textProperty().bind(newValue.name());
             } else {
                 description.setText("");
                 starNameLabel.setText("");
@@ -211,15 +227,26 @@ public class StarSelectionScreen extends GridPane {
 
     }
 
+    /**
+     * Toggles screen parameters checking if hardware probe deployment manifests are authorized.
+     *
+     * @param b True to lock navigation and unlock checkbox validation states
+     */
     public void setPreselection(boolean b) {
         preselection.set(b);
     }
 
+    /**
+     * Wipes active system asset tracking tables and triggers deep structural lists resets.
+     */
     public void reset(){
         probedSystems.clear();
         stars.reset();
     }
 
+    /**
+     * Processes selected mapping lists and dynamically allocates structural system simulation records.
+     */
     public void generateProbedStarSystems() {
         probedSystems.clear();
 
@@ -227,8 +254,21 @@ public class StarSelectionScreen extends GridPane {
             probedSystems.put(probed, new StarSystem(probed));
         }
 
+        // quick hack to regenerate the data labels
+        StarSystemAsset current = stars.getSelection().getValue();
+        if (current != null) {
+            var selectionProperty = (ObjectProperty<StarSystemAsset>) stars.getSelection();
+            selectionProperty.set(null);
+            selectionProperty.set(current);
+        }
+
     }
 
+    /**
+     * Extracts or instantiates the targeted stellar node profile currently focused by the buying manifest.
+     *
+     * @return Initialized and fully mapped system instance model
+     */
     public StarSystem getGeneratedChosenStarSystem() {
         StarSystem system = probedSystems.get(stars.getSelection().get());
         if (system == null) {
@@ -238,10 +278,19 @@ public class StarSelectionScreen extends GridPane {
         return system;
     }
 
+    /**
+     * Fetches reactive localized resource bundle properties assigned to tracking string keys.
+     *
+     * @param name Target translation property identifier tag
+     * @return Localized text expression binding node
+     */
     public static ReadOnlyStringProperty localizedProperty(String name) {
         return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }
 
+    /**
+     * Functional interface template deploying custom lambda launch executions across screens.
+     */
     @FunctionalInterface
     public interface Launch {
         void launch();

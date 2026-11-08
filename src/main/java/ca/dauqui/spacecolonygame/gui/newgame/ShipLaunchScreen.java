@@ -5,6 +5,7 @@ import ca.dauqui.spacecolonygame.gamedata.ProbeAndSatelliteEffect;
 import ca.dauqui.spacecolonygame.gamedata.SatelliteType;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.util.VideoLibrary;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -19,6 +20,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.scene.text.Font;
@@ -27,12 +29,18 @@ import javafx.scene.text.FontWeight;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
+/**
+ * Screen layout container for the pre-flight check and spacecraft launch sequence.
+ * Orchestrates sequenced engine checklists and registers activated exploration probe data modifiers.
+ *
+ * @author Jean-François Quintal
+ */
 public class ShipLaunchScreen extends StackPane {
+    private static final Logger LOG = Logger.getLogger(ShipLaunchScreen.class.getName());
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
-    private static final double ESTIMATE_BUTTONLINE_HEIGHT = 36.0;
-
-
+    private static final double ESTIMATE_BUTTON_LINE_HEIGHT = 36.0;
 
     private final Set<ProbeAndSatelliteEffect> activatedEffects;
     private final MediaView mediaView;
@@ -50,6 +58,12 @@ public class ShipLaunchScreen extends StackPane {
     private final ButtonLine deploySolarSail;
     private final ButtonLine reactorToFullPower;
 
+    /**
+     * Constructs the primary launch control centre deck frame, binding responsive layout heights,
+     * building transparent layout viewports, and generating sequential launch checklists.
+     *
+     * @param action Logic handler executed when confirming final screen exit procedures
+     */
     public ShipLaunchScreen(EventHandler<ActionEvent> action) {
         super();
         activatedEffects = EnumSet.noneOf(ProbeAndSatelliteEffect.class);
@@ -69,6 +83,7 @@ public class ShipLaunchScreen extends StackPane {
         next = makeButtonLine(localizedProperty("ShipLaunchScreen.NEXT"));
         next.setButtonAction(action);
 
+        // Sequence control routing chain linking sequential pre-flight triggers
         launchShip= new ButtonLine(localizedProperty("ShipLaunchScreen.LAUNCH_SHIP"));
         launchShip.setButtonAction(_ -> {
             playVideo("");
@@ -129,8 +144,9 @@ public class ShipLaunchScreen extends StackPane {
         probeLaunchScroll.setContent(probeLaunch);
         probeLaunchScroll.setFitToWidth(true);
         probeLaunchScroll.setFitToHeight(true);
-
         probeLaunchScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        // Dynamically toggle vertical scrollbar necessity based on physical button entries threshold
         probeLaunchScroll.vbarPolicyProperty().bind(Bindings.createObjectBinding(() -> {
             if (probeLaunch.getChildren().size() > 5) {
                 return ScrollPane.ScrollBarPolicy.AS_NEEDED;
@@ -139,23 +155,22 @@ public class ShipLaunchScreen extends StackPane {
             }
         }, probeLaunch.getChildren()));
 
-
+        // Cap scroll region size safely to wrap exactly up to a max threshold limit of 5 lines
         probeLaunchScroll.minHeightProperty().bind(Bindings.createDoubleBinding(() -> {
             if (probeLaunch.getChildren().isEmpty()) return 0.0;
-            // Calcule la hauteur exacte requise sans jamais dépasser la taille de 5 boutons
-            return Math.min(ESTIMATE_BUTTONLINE_HEIGHT * 5, probeLaunch.getChildren().size() * ESTIMATE_BUTTONLINE_HEIGHT);
+            return Math.min(ESTIMATE_BUTTON_LINE_HEIGHT * 5, probeLaunch.getChildren().size() * ESTIMATE_BUTTON_LINE_HEIGHT);
         }, probeLaunch.getChildren()));
 
         probeLaunchScroll.maxHeightProperty().bind(probeLaunchScroll.minHeightProperty());
 
-        // --- CONFIGURATION DE LA SECTION DES SONDES ---
+        // --- CONFIGURATION OF THE PROBE SECTION ---
         Label probeLaunchSectionName = Utility.createLabel(localizedProperty("ShipLaunchScreen.PROBE_SECTION_TITLE"));
         setTitleSectionStyle(probeLaunchSectionName);
 
         probeLaunchSection.getChildren().addAll(probeLaunchSectionName, probeLaunchScroll);
         probeLaunchSection.setPadding(new javafx.geometry.Insets(10, 0, 10, 0));
 
-        // La section se masque et libère sa place verticalement si aucune sonde n'est disponible
+        // Completely hide probe panel frame nodes if available inventory tracking indices stay empty
         probeLaunchSection.visibleProperty().bind(Bindings.isNotEmpty(probeLaunch.getChildren()));
         probeLaunchSection.managedProperty().bind(probeLaunchSection.visibleProperty());
 
@@ -171,30 +186,30 @@ public class ShipLaunchScreen extends StackPane {
 
         launcher.setMaxWidth(400);
 
-        // Calcul déterministe de la hauteur globale basé sur les listes pour éviter le décalage asynchrone
+        // Deterministic responsive height calculation pipeline to prevent layout shifting
         launcher.maxHeightProperty().bind(Bindings.createDoubleBinding(() -> {
             double totalHeight = 30.0;
             double estimatedLabelHeight = 42.0; // Hauteur approximative des titres de section
 
-            // 1. Prise en compte de la section Vaisseau
+            // 1. Considering the launch ship section
             if (doShipLaunch.get()) {
-                totalHeight += (shipLaunch.getHeight() > 0) ? shipLaunch.getHeight() : (ESTIMATE_BUTTONLINE_HEIGHT * 6);
+                totalHeight += (shipLaunch.getHeight() > 0) ? shipLaunch.getHeight() : (ESTIMATE_BUTTON_LINE_HEIGHT * 6);
             }
 
-            // 2. Prise en compte de la section Sondes (seulement si elle contient des éléments)
+            // 2. Considering the Probes section (if any)
             if (!probeLaunch.getChildren().isEmpty()) {
                 totalHeight += estimatedLabelHeight;
-                totalHeight += Math.min(ESTIMATE_BUTTONLINE_HEIGHT * 5, probeLaunch.getChildren().size() * ESTIMATE_BUTTONLINE_HEIGHT);
+                totalHeight += Math.min(ESTIMATE_BUTTON_LINE_HEIGHT * 5, probeLaunch.getChildren().size() * ESTIMATE_BUTTON_LINE_HEIGHT);
                 totalHeight += 20.0;
             }
 
-            // 3. Prise en compte de la section Suivant
+            // 3. Considering the do next section
             totalHeight += estimatedLabelHeight + next.getHeight();
             if (next.getHeight() == 0) {
-                totalHeight += ESTIMATE_BUTTONLINE_HEIGHT; // Valeur refuge si pas encore dessiné
+                totalHeight += ESTIMATE_BUTTON_LINE_HEIGHT;
             }
 
-            return totalHeight + 15.0; // Petit tampon pour les bordures et espacements internes
+            return totalHeight + 15.0; // Buffer for borders and interior spacing
         }, doShipLaunch, shipLaunch.heightProperty(), probeLaunch.getChildren(), next.heightProperty()));
 
         launcher.setMinHeight(0);
@@ -204,6 +219,11 @@ public class ShipLaunchScreen extends StackPane {
         this.setAlignment(Pos.CENTER);
     }
 
+    /**
+     * Applies standard uniform typographic heading styles across section header nodes.
+     *
+     * @param title The UI label heading node to apply formatting rules on
+     */
     private static void setTitleSectionStyle(Label title) {
         title.setStyle("-fx-text-fill: BLUE;");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 30));
@@ -211,9 +231,67 @@ public class ShipLaunchScreen extends StackPane {
         title.setAlignment(Pos.CENTER);
     }
 
-    private void playVideo(String s) {
+    /**
+     * Instantiates a localized cinematic media stream retrieved via the moddable asset pipeline,
+     * safely clearing background playback registers, rendering the video viewport visible,
+     * and isolating interface layout nodes during animation cycles.
+     *
+     * @param videoPath Target relative file pathway managed by the VideoLibrary (e.g., "launch/rocket.mp4")
+     */
+    private void playVideo(String videoPath) {
+        if (videoPath == null || videoPath.isBlank()) {
+            return;
+        }
+
+        try {
+            // 1. Safely dispose of the previous media player to prevent severe native memory leaks
+            if (currentMediaPlayer != null) {
+                currentMediaPlayer.stop();
+                currentMediaPlayer.dispose();
+                currentMediaPlayer = null;
+            }
+
+            // 2. Fetch the streamable resource instance via the global cascading mod system registry
+            Media videoAsset = VideoLibrary.VIDEO_LIBRARY.getAsset(videoPath);
+            if (videoAsset == null) {
+                LOG.warning(() -> "Launch cinematic asset could not be resolved by the loader: " + videoPath);
+                return;
+            }
+
+            // 3. Initialize the core media player execution context
+            currentMediaPlayer = new MediaPlayer(videoAsset);
+            mediaView.setMediaPlayer(currentMediaPlayer);
+
+            // 4. Interface state swaps: Obscure control buttons and isolate the video view during playback
+            launcher.setVisible(false);
+            mediaView.setVisible(true);
+
+            // 5. Setup lifecycle callbacks to bring back the UI controls as soon as the video reaches its completion gate
+            currentMediaPlayer.setOnEndOfMedia(() -> {
+                mediaView.setVisible(false);
+                launcher.setVisible(true);
+                currentMediaPlayer.stop();
+                currentMediaPlayer.dispose();
+                currentMediaPlayer = null;
+            });
+
+            // 6. Fire the media execution thread engine
+            currentMediaPlayer.play();
+
+        } catch (Exception e) {
+            LOG.warning(() -> "Failed to engage launch cutscene video processing pipeline: " + e.getMessage());
+            // Safe fallback recovery restoring operational deck controls if hardware or format errors register
+            mediaView.setVisible(false);
+            launcher.setVisible(true);
+        }
     }
 
+    /**
+     * Wipes historical data registers, evaluates current asset maps,
+     * and resets system checklist paths to baseline positions.
+     *
+     * @param colony Core state logic entity describing player inventory states
+     */
     public void reset(Colony colony) {
         activatedEffects.clear();
         generateProbeList(colony);
@@ -232,16 +310,21 @@ public class ShipLaunchScreen extends StackPane {
         launcher.requestLayout();
     }
 
+    /**
+     * Iterates over available orbital assets maps to generate the active probe launching checklist.
+     *
+     * @param colony Master inventory structure supplying current launch module units balance records
+     */
     private void generateProbeList(Colony colony) {
         probeLaunch.getChildren().clear();
 
         for (SatelliteType satelliteType : colony.getSatelliteTypesInInventory()){
-            if (ProbeAndSatelliteEffect.containsPlanetaryEffect(satelliteType.getEffects())){
+            if (ProbeAndSatelliteEffect.containsPlanetaryEffect(satelliteType.effects())){
                 ButtonLine probe = new ButtonLine(satelliteType.localizedProperty());
                 probe.setButtonAction(_ -> {
                     int missing = colony.removeFromSatelliteInventory(satelliteType, 1);
                     if (missing <= 0){
-                        activatedEffects.addAll(satelliteType.getEffects());
+                        activatedEffects.addAll(satelliteType.effects());
                     }
                     if (colony.getAmountInSatelliteInventory(satelliteType) == 0){
                         probe.disableButton(true);
@@ -252,29 +335,58 @@ public class ShipLaunchScreen extends StackPane {
         }
     }
 
+    /**
+     * Loops across generated reconnaissance probe elements to toggle their operational selection availability.
+     *
+     * @param disable True to safely lock down the full interaction line button array
+     */
     private void setProbeListButtonDisable(boolean disable){
         for (Node node : probeLaunch.getChildren()) {
             if (node instanceof ButtonLine bl) {
-                bl.setDisable(disable);
+                bl.disableButton(disable);
             }
         }
     }
 
+    /**
+     * @return An unmodifiable reference wrapper enclosing all probe technology metrics unlocked for this star
+     */
     public Set<ProbeAndSatelliteEffect> getActiveProbeAndSatelliteEffects() {
         return Collections.unmodifiableSet(activatedEffects);
     }
 
+    /**
+     * Factory utility helper allocating configured checklist element boundaries.
+     *
+     * @param text Persistent key mapping localized string text parameters
+     * @return Formatted button line entity block
+     */
     private ButtonLine makeButtonLine(ReadOnlyStringProperty text){
         return new ButtonLine(text);
     }
 
+    /**
+     * Fetches reactive localized resource bundle properties assigned to tracking string keys.
+     *
+     * @param key Target translation property identifier tag
+     * @return Localized text expression binding node
+     */
     private static ReadOnlyStringProperty localizedProperty(String key){
         return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, key);
     }
 
+    /**
+     * Internal layout row component grouping an action trigger box
+     * and its associated tracking display description label.
+     */
     private static class ButtonLine extends HBox{
         private final Button button;
 
+        /**
+         * Hooks tracking dependencies up to the evaluation pipeline engine.
+         *
+         * @param text Alphanumeric text wrapper assigning label values to rows
+         */
         public ButtonLine(ReadOnlyStringProperty text){
             button = new Button();
             Utility.applyOutpostSquareButtonStyle(button);
@@ -285,10 +397,21 @@ public class ShipLaunchScreen extends StackPane {
             maxHeightProperty().bind(Bindings.add(Bindings.max(button.heightProperty(), label.heightProperty()),2));
             setStyle("-fx-background-color: black;");
         }
+
+        /**
+         * Binds execution handlers directly onto the click interface button triggers.
+         *
+         * @param action Custom lambda callback tracking operational checklist routines
+         */
         public void setButtonAction(EventHandler<ActionEvent> action){
             button.setOnAction(action);
         }
 
+        /**
+         * Mutates selection parameters checking if interaction gates are disabled.
+         *
+         * @param enable True to lock down input operations on this row checkbox trigger
+         */
         public void disableButton(boolean enable){
             button.setDisable(enable);
         }

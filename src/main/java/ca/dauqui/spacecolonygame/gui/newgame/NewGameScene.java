@@ -5,6 +5,9 @@ import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.BackgroundImagePane;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
+import ca.dauqui.spacecolonygame.gui.newgame.cargoloader.ShipCargoLoader;
+import ca.dauqui.spacecolonygame.gui.newgame.chooseplanetscreen.ChoosePlanetScreen;
+import ca.dauqui.spacecolonygame.gui.newgame.starselectionscreen.StarSelectionScreen;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Pos;
@@ -15,10 +18,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 
-import java.util.logging.Logger;
-
+/**
+ * Master state machine scene managing the chronological registration panels
+ * and orchestration screens for starting a new campaign session.
+ * Actively toggles visibility scopes to guide players across initialization checkpoints.
+ *
+ * @author Jean-François Quintal
+ */
 public class NewGameScene extends Scene {
-    private static final Logger LOG = Logger.getLogger(NewGameScene.class.getName());
     private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
 
@@ -34,7 +41,12 @@ public class NewGameScene extends Scene {
     private final ChoosePlanetScreen choosePlanet;
     private final Node siteChooser;
 
-
+    /**
+     * Constructs the root orchestration canvas scene, layering all setup panel instances
+     * simultaneously and configuring baseline visibility masks.
+     *
+     * @param mainWindow Core primary application window frame supervising current scene swaps
+     */
     public NewGameScene(MainWindow mainWindow) {
         super(new StackPane());
         var root = (StackPane) getRoot();
@@ -60,6 +72,7 @@ public class NewGameScene extends Scene {
 
         root.getChildren().addAll(readStory, commanderName, aiName, starSelection, shipLoading, shipTakeOff, choosePlanet, siteChooser);
 
+        // Isolate the narrative window as the mandatory initial step entry gate
         readStory.setVisible(true);
         commanderName.setVisible(false);
         aiName.setVisible(false);
@@ -72,8 +85,11 @@ public class NewGameScene extends Scene {
 
     }
 
-
-
+    /**
+     * Instantiates the prologue textual storytelling narrative overlay pane.
+     *
+     * @return Fully operational narrative UI card component node
+     */
     private Node createReadStory() {
         VBox root = new VBox();
         root.setStyle("-fx-background-color: black;" +
@@ -90,7 +106,6 @@ public class NewGameScene extends Scene {
         readStoryNextButton.setOnAction(_ -> {
             readStory.setVisible(false);
             commanderName.setVisible(true);
-            // add here what is needed when switching to commander name
         });
 
         Utility.setButtonStyle(readStoryNextButton);
@@ -103,6 +118,11 @@ public class NewGameScene extends Scene {
         return root;
     }
 
+    /**
+     * Instantiates the text tracking input interface mapping the player commander name.
+     *
+     * @return Fully initialized name config box node component
+     */
     private Node createCommanderName() {
         return createSetNamesBox(localizedProperty("NewGameScene.COMMANDER_LABEL"),
                 localizedProperty("NewGameScene.COMMANDER_DEFAULT_NAME"),
@@ -120,6 +140,11 @@ public class NewGameScene extends Scene {
                 });
     }
 
+    /**
+     * Instantiates the text tracking input interface mapping the companion core AI designation.
+     *
+     * @return Fully initialized name config box node component
+     */
     private Node createAiName() {
         return createSetNamesBox(localizedProperty("NewGameScene.AI_LABEL"),
                 localizedProperty("NewGameScene.AI_DEFAULT_NAME"),
@@ -138,6 +163,17 @@ public class NewGameScene extends Scene {
         });
     }
 
+    /**
+     * Universal structural factory building uniform name configuration panel boxes.
+     *
+     * @param label1           Title text instruction banner property
+     * @param defaultName      Initial default fallback name selection text property
+     * @param nextButtonText   Localized label tag for the validation switch button
+     * @param nextButtonAction Lambda callback execution mapping onward validation gates
+     * @param backButtonText   Localized label tag for the cancellation step button
+     * @param backButtonAction Lambda callback execution mapping backward navigation gates
+     * @return Generated structural unified naming block node box
+     */
     private Node createSetNamesBox(ReadOnlyStringProperty label1, ReadOnlyStringProperty defaultName, ReadOnlyStringProperty nextButtonText, Action nextButtonAction, ReadOnlyStringProperty backButtonText,
                                    Action backButtonAction){
         VBox root = new VBox();
@@ -183,6 +219,12 @@ public class NewGameScene extends Scene {
         return root;
     }
 
+    /**
+     * Allocates and configures cross-navigation actions linking the core star grid map workspace.
+     * Handles routing splits depending on whether probe deployment or cargo initialization is clicked.
+     *
+     * @return Fully structured StarSelectionScreen panel view
+     */
     private StarSelectionScreen createStarSelection() {
         return new StarSelectionScreen(mainWindow, () -> {
             starSelection.setVisible(false);
@@ -195,7 +237,12 @@ public class NewGameScene extends Scene {
         });
     }
 
-
+    /**
+     * Instantiates the market logistics area pane split, anchoring the functional
+     * ShipCargoLoader table next to its corresponding technical blueprint graphics.
+     *
+     * @return Fully operational cargo loader configuration layout block
+     */
     private Node createShipLoading() {
         GridPane root = new GridPane();
         root.setStyle("-fx-background-color: black;" +
@@ -240,6 +287,11 @@ public class NewGameScene extends Scene {
         return root;
     }
 
+    /**
+     * Instantiates the visual vehicle checklist sequence checkpoint panel layout view.
+     *
+     * @return Fully structural operational checklist screen component
+     */
     private ShipLaunchScreen createShipTakeoff() {
         return new ShipLaunchScreen(_ -> {
             shipTakeOff.setVisible(false);
@@ -251,6 +303,11 @@ public class NewGameScene extends Scene {
         });
     }
 
+    /**
+     * Instantiates the telemetry panel interface controlling active planetary target selection.
+     *
+     * @return Fully operational descriptive planet selector grid layout sheet
+     */
     private ChoosePlanetScreen createChoosePlanet() {
         return new ChoosePlanetScreen(_ ->{
             choosePlanet.setVisible(false);
@@ -261,17 +318,26 @@ public class NewGameScene extends Scene {
         });
     }
 
+    /**
+     * Instantiates the landing coordinate grid zone tracking selector block layout.
+     *
+     * @return Placeholder modular structural stack node layout component
+     */
     private Node createSiteChooser() {
         return new StackPane();
     }
 
-
+    /**
+     * Flushes transient operational registers, purges active registries,
+     * and forces structural configurations back to initial prologue states.
+     */
     public void prepareNewGame() {
         readStory.setVisible(true);
         commanderName.setVisible(false);
         aiName.setVisible(false);
         starSelection.setVisible(false);
         starSelection.reset();
+        starSelection.setPreselection(true);
         shipLoading.setVisible(false);
         shipTakeOff.setVisible(false);
         choosePlanet.setVisible(false);
@@ -280,19 +346,40 @@ public class NewGameScene extends Scene {
     }
 
     public void startNewGame() {
+        // this is probably the method to call once the setup phase is done I think (should have left a comment when I wrote this)
     }
 
+    /**
+     * Sets proportional baseline sizing requirements applied onto the parent scene node container.
+     *
+     * @param width  Horizontal resolution limit width parameters in pixels
+     * @param height Vertical resolution limit height parameters in pixels
+     */
     public void setSize(double width, double height) {
         ((Pane) getRoot()).setPrefWidth(width);
         ((Pane) getRoot()).setPrefHeight(height);
     }
 
+    /**
+     * Fetches reactive localized resource bundle properties assigned to tracking string keys.
+     *
+     * @param name Target translation property identifier tag
+     * @return Localized text expression binding node
+     */
     public static ReadOnlyStringProperty localizedProperty(String name) {
         return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
     }
 
+    /**
+     * Internal operational single-argument action proxy routing named layout swaps text events.
+     */
     @FunctionalInterface
     private interface Action{
+        /**
+         * Invokes custom dynamic text adjustments pipelines.
+         *
+         * @param name Raw alphanumeric input text provided via configuration fields
+         */
         void run(String name);
     }
 
