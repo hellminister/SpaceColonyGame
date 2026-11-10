@@ -1,5 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
+import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
+
 /**
  * Immutable structural record defining the comprehensive physical, environmental,
  * and atmospheric characteristics of a generated planetary body.

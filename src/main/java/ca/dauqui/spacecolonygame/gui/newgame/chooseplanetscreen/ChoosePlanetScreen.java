@@ -1,7 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame.chooseplanetscreen;
 
 import ca.dauqui.spacecolonygame.gamedata.ProbeAndSatelliteEffect;
-import ca.dauqui.spacecolonygame.gamedata.starsystem.AtmosphereComposition;
+import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.Planet;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
@@ -240,7 +240,7 @@ public class ChoosePlanetScreen extends VBox {
                         return localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get();
                     }
 
-                    return atmosphereComposition.getGasesSortedByConcentration().stream()
+                    return atmosphereComposition.getAtmosphereGasesSortedByConcentration().stream()
                             .limit(2)
                             .map(gasType -> String.format("%s %.1f%%",
                                     gasType.name().get(),
@@ -266,16 +266,31 @@ public class ChoosePlanetScreen extends VBox {
                     return "?";
                 }
 
+                StringBuilder text = new StringBuilder();
+
                 AtmosphereComposition atmosphereComposition = selectedPlanet.get().getPlanet().atmosphereComposition();
                 if (!atmosphereComposition.hasAtmosphere()) {
-                    return localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get();
+                    text.append(localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get());
+                } else {
+                    text.append(atmosphereComposition.getAtmosphereGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getAtmosphereGasPercentage(gasType).get() > 0.0)
+                            .map(gasType -> String.format("%s %.1f%%",
+                                    gasType.name().get(),
+                                    atmosphereComposition.getAtmosphereGasPercentage(gasType).get() * 100.0))
+                            .collect(java.util.stream.Collectors.joining("\n")));
                 }
 
-                return atmosphereComposition.getGasesSortedByConcentration().stream()
-                        .map(gasType -> String.format("%s %.1f%%",
-                                gasType.name().get(),
-                                atmosphereComposition.getAtmosphereGasPercentage(gasType).get() * 100.0))
-                        .collect(java.util.stream.Collectors.joining("\n"));
+                if (atmosphereComposition.hasCondensedGases()){
+                    text.append("\n\n").append("CONDENSED GASES").append("\n\n")
+                            .append(atmosphereComposition.getCondensedGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getCondensedGasPercentage(gasType).get() > 0.0)
+                                    .map(gasType -> String.format("%s %.1f%%",
+                                            gasType.name().get(),
+                                            atmosphereComposition.getCondensedGasPercentage(gasType).get() * 100.0))
+                                    .collect(java.util.stream.Collectors.joining("\n")));
+                }
+
+
+
+                return text.toString();
             }
         });
         atmosphere.setTooltip(atmosphereToolTip);

@@ -214,6 +214,8 @@ public class StarSelectionScreen extends GridPane {
                 description.textProperty().bind(newValue.description());
                 starNameLabel.textProperty().bind(newValue.name());
             } else {
+                description.textProperty().unbind();
+                starNameLabel.textProperty().unbind();
                 description.setText("");
                 starNameLabel.setText("");
             }

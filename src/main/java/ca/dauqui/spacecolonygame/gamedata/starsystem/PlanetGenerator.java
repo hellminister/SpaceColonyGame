@@ -1,5 +1,8 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
+import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
+import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereGasType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -282,7 +285,7 @@ public final class PlanetGenerator {
             share = Math.round(share * 100.0) / 100.0;
 
             if (share > 0.0) {
-                composition.addGas(compList.get(i), targetedRawMass * share);
+                composition.addAtmosphereGas(compList.get(i), targetedRawMass * share);
                 remainingPercentage -= share;
             }
         }
@@ -290,7 +293,7 @@ public final class PlanetGenerator {
         // the lightest gas takes what is left
         double finalShare = Math.round(remainingPercentage * 100.0) / 100.0;
         if (finalShare > 0.0) {
-            composition.addGas(compList.getLast(), targetedRawMass * finalShare);
+            composition.addAtmosphereGas(compList.getLast(), targetedRawMass * finalShare);
         }
     }
 
@@ -330,13 +333,13 @@ public final class PlanetGenerator {
 
                 // Strict mathematical safeguard to never overshoot the remaining budget parameters
                 share = Math.clamp(share, 0.0, remainingPercentage);
-                composition.addGas(gas, gasGiantBaseMass * share);
+                composition.addAtmosphereGas(gas, gasGiantBaseMass * share);
                 remainingPercentage -= share;
             }
 
             // The final gas in the tracked registry absorbs the absolute mathematical residual (guarantees exactly 100%)
             if (remainingPercentage > 0.0) {
-                composition.addGas(nativeGases.getLast(), gasGiantBaseMass * remainingPercentage);
+                composition.addAtmosphereGas(nativeGases.getLast(), gasGiantBaseMass * remainingPercentage);
             }
         }
     }
@@ -351,8 +354,6 @@ public final class PlanetGenerator {
      * @param magneticField the magnetic field strength of the planet
      * @return the number of available site on the planet
      */
-    // the code reads easily and the division would simply add unnecessary overhead in the method,
-    // Might review this if we complexify the calculations
     @SuppressWarnings("java:S3776")
     private static int calculateAvailableSites(String type, double radius,
                                                double volcanism,
