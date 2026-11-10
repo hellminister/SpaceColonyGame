@@ -7,16 +7,15 @@ import javafx.beans.binding.DoubleBinding;
 import java.util.List;
 
 /**
- * This class contains the gases composing the planet's atmosphere as well as its pressure
- * It also calculates the atmosphere Toxicity, Corrosiveness, Greenhouse factor and Air pressure and surface temperature
+ * Central atmospheric simulation controller orchestrating dynamic multiphase gas matrices.
+ * Bridges kinetic vapour mechanics and frozen surface crust accumulations through dedicated {@link PhaseReservoir} stores.
+ * Exposes core reactive JavaFX bindings for planetary pressure, cumulative toxicity, corrosiveness,
+ * greenhouse factors, and stabilized thermodynamic surface temperatures.
  *
  * @author Jean-François Quintal
  */
 public class AtmosphereComposition {
     private final PhaseReservoir vaporPhase;
-
-
-
     private final PhaseReservoir condensedPhase;
     private final DoubleBinding pressure;
     private final DoubleBinding toxicity;
@@ -25,11 +24,14 @@ public class AtmosphereComposition {
     private final DoubleBinding surfaceTemperature;
 
     /**
-     * Initialize the class and prepares the variables bindings
-     * Try using the gravity and radius object contained within the planet of this atmosphere
-     * @param gravity The gravity of the planet
-     * @param radius the radius of the planet
-     * @param radiusUnit the radius unit used
+     * Initializes the planetary composition matrix, binding structural planetary dimensions
+     * against dynamic gas masses to evaluate macro-climatic criteria.
+     *
+     * @param gravity          Calculated surface gravitational acceleration vector scalar (m/s²)
+     * @param radius           The geometric radius layout dimensions parameter of the host planet
+     * @param radiusUnit       Structural configuration token asserting Earth "Re" or Jovian "Rj" scaling maps
+     * @param tempEquilibrium  Foundational black-body raw thermal index tracking bounds prior to greenhouse adjustments (Kelvin)
+     * @param isTidallyLocked  Flag asserting permanent sync rotations, introducing systemic radiation cooling offsets
      */
     public AtmosphereComposition(double gravity, double radius, String radiusUnit, double tempEquilibrium, boolean isTidallyLocked) {
         this.vaporPhase = new PhaseReservoir();
@@ -72,6 +74,7 @@ public class AtmosphereComposition {
             }
         };
 
+        // Asynchronous structural listener holding a lock protecting feedback calculation loops
         this.surfaceTemperature.addListener(new InvalidationListener() {
             private boolean isUpdating = false;
 
@@ -167,7 +170,7 @@ public class AtmosphereComposition {
      * Condenses gas overheads into surface ice sheets using addCondensedGas,
      * or sublimates ground frost back into vapour using removeCondensedGas.
      */
-    public void updatePhaseTransitions() {
+    private void updatePhaseTransitions() {
         double currentTotalPressure = getPressure();
         double currentTemp = getSurfaceTemperature();
         double totalMass = getVaporTotalMass().get();
@@ -182,88 +185,194 @@ public class AtmosphereComposition {
 
             if (partialPressure > satPressure) {
                 // Saturated status: calculate excess mass to condense out of the air
-                double maxAllowedMass = (satPressure / currentTotalPressure) * totalMass;
-                double massToCondense = gasMass - maxAllowedMass;
-
-                if (massToCondense > 0.0) {
-                    removeAtmosphereGas(gas, massToCondense);
-                    addCondensedGas(gas, massToCondense);
-                }
+                condensingVapourGas(gas, satPressure, currentTotalPressure, totalMass, gasMass);
             } else if (partialPressure < satPressure) {
                 // Unsaturated status: check if we have ground reserves to sublimate
-                double groundReserve = getCondensedGasMassFor(gas);
+                evaporatingCondensedGas(gas, satPressure, currentTotalPressure, totalMass, gasMass);
+            }
+        }
+    }
 
-                if (groundReserve > 0.0) {
-                    double targetPartialMass = (satPressure / currentTotalPressure) * totalMass;
-                    double massDeficit = targetPartialMass - gasMass;
+    /**
+     * Models chemical phase transitions by extracting unsaturated gas mass from surface ice sheets back into the atmosphere.
+     * Evaluates local mass deficits based on current partial and saturation pressure ratios to safely drive sublimation loops.
+     *
+     * @param gas                  The chemical gas type signature processing sublimation
+     * @param satPressure          The computed saturation vapour pressure of the target compound at current temperature (Bars)
+     * @param currentTotalPressure The absolute macro barometric pressure currently exerted by the global vapour phase (Bars)
+     * @param totalMass            The cumulative active mass aggregate currently present inside the vapour reservoir (kg)
+     * @param gasMass              The current raw individual mass distribution of this gas element floating in the air (kg)
+     */
+    private void evaporatingCondensedGas(AtmosphereGasType gas, double satPressure, double currentTotalPressure, double totalMass, double gasMass) {
+        double groundReserve = getCondensedGasMassFor(gas);
 
-                    if (massDeficit > 0.0) {
-                        // Dynamically request removal
-                        double massToSublimate = Math.min(massDeficit, groundReserve);
-                        double unableToRemove = removeCondensedGas(gas, massToSublimate);
+        if (groundReserve > 0.0) {
+            double targetPartialMass = (satPressure / currentTotalPressure) * totalMass;
+            double massDeficit = targetPartialMass - gasMass;
 
-                        double actualSublimated = massToSublimate - unableToRemove;
-                        if (actualSublimated > 0.0) {
-                            addAtmosphereGas(gas, actualSublimated);
-                        }
-                    }
+            if (massDeficit > 0.0) {
+                // Dynamically request removal
+                double massToSublimate = Math.min(massDeficit, groundReserve);
+                double unableToRemove = removeCondensedGas(gas, massToSublimate);
+
+                double actualSublimated = massToSublimate - unableToRemove;
+                if (actualSublimated > 0.0) {
+                    addAtmosphereGas(gas, actualSublimated);
                 }
             }
         }
     }
 
+    /**
+     * Models chemical phase transitions by condensing saturated atmospheric gas fractions down into solid or liquid surface blankets.
+     * Calculates the strict mass overhead exceeding allowed physical limits to trigger automated precipitation fallout.
+     *
+     * @param gas                  The chemical gas type signature processing condensation
+     * @param satPressure          The computed saturation vapour pressure of the target compound at current temperature (Bars)
+     * @param currentTotalPressure The absolute macro barometric pressure currently exerted by the global vapour phase (Bars)
+     * @param totalMass            The cumulative active mass aggregate currently present inside the vapour reservoir (kg)
+     * @param gasMass              The current raw individual mass distribution of this gas element floating in the air (kg)
+     */
+    private void condensingVapourGas(AtmosphereGasType gas, double satPressure, double currentTotalPressure, double totalMass, double gasMass) {
+        double maxAllowedMass = (satPressure / currentTotalPressure) * totalMass;
+        double massToCondense = gasMass - maxAllowedMass;
+
+        if (massToCondense > 0.0) {
+            removeAtmosphereGas(gas, massToCondense);
+            addCondensedGas(gas, massToCondense);
+        }
+    }
+
+    /**
+     * Extracts the real-time vapour mass value assigned to a specific gas tracking slot.
+     *
+     * @param gas The targeting chemical asset reference
+     * @return Current raw vapour mass allocation expressed in kilograms
+     */
     public double getVaporMassFor(AtmosphereGasType gas) {
         return vaporPhase.getMassFor(gas);
     }
 
+    /**
+     * @return The master continuous vapour mass total tracking layout binding
+     */
     public DoubleBinding getVaporTotalMass() {
         return vaporPhase.getTotalMass();
     }
 
+    /**
+     * Evaluates if the vapour phase repository contains active mass aggregates.
+     *
+     * @return True if the internal absolute vapour mass registry strictly exceeds zero kilograms
+     */
     public boolean hasAtmosphere() {
         return vaporPhase.hasPhase();
     }
 
+    /**
+     * Compiles a localized sequence of all chemical elements currently active within the vapour matrix,
+     * filtered to exclude trace levels and sorted in strict descending concentration order.
+     *
+     * @return A sorted, snapshot list of non-empty gaseous AtmosphereGasType entities
+     */
     public List<AtmosphereGasType> getAtmosphereGasesSortedByConcentration() {
         return vaporPhase.getGasesSortedByConcentration();
     }
 
-    public double removeAtmosphereGas(AtmosphereGasType atmosphereGasType, double amount) {
-        return vaporPhase.removeGas(atmosphereGasType, amount);
+    /**
+     * Strips a specified mass allocation away from the target vapour array slot.
+     *
+     * @param gasType The target chemical compound structural reference to drain
+     * @param amount            Target mass quantity to withdraw measured in kilograms
+     * @return The remaining mass deficit quantity that could not be removed if supply was insufficient
+     */
+    public double removeAtmosphereGas(AtmosphereGasType gasType, double amount) {
+        return vaporPhase.removeGas(gasType, amount);
     }
 
-    public void addAtmosphereGas(AtmosphereGasType atmosphereGasType, double amount) {
-        vaporPhase.addGas(atmosphereGasType, amount);
+    /**
+     * Injects a specified mass allocation into the targeting vapour array index slot.
+     *
+     * @param gasType The targeting chemical compound structural reference
+     * @param amount            Mass quantity to inject measured in kilograms
+     */
+    public void addAtmosphereGas(AtmosphereGasType gasType, double amount) {
+        vaporPhase.addGas(gasType, amount);
     }
 
-    public DoubleBinding getAtmosphereGasPercentage(AtmosphereGasType atmosphereGasType) {
-        return vaporPhase.getGasPercentage(atmosphereGasType);
+    /**
+     * Computes or retrieves a cached reactive binding evaluating the vapour mass ratio of a specific gas (0.0 to 1.0).
+     *
+     * @param gasType The target chemical gas profile to evaluate
+     * @return A lazily evaluated DoubleBinding tracking the percentage of the selected gas in the air
+     */
+    public DoubleBinding getAtmosphereGasPercentage(AtmosphereGasType gasType) {
+        return vaporPhase.getGasPercentage(gasType);
     }
 
+    /**
+     * Extracts the real-time condensed mass value assigned to a specific gas tracking slot.
+     *
+     * @param gas The targeting chemical asset reference
+     * @return Current raw condensed mass allocation expressed in kilograms
+     */
     public double getCondensedGasMassFor(AtmosphereGasType gas) {
         return condensedPhase.getMassFor(gas);
     }
 
+    /**
+     * @return The master continuous condensed mass total tracking layout binding
+     */
     public DoubleBinding getCondensedGasTotalMass() {
         return condensedPhase.getTotalMass();
     }
 
+    /**
+     * Compiles a localized sequence of all chemical elements currently active within the condensed matrix,
+     * filtered to exclude trace levels and sorted in strict descending concentration order.
+     *
+     * @return A sorted, snapshot list of non-empty frozen or liquid AtmosphereGasType entities
+     */
     public List<AtmosphereGasType> getCondensedGasesSortedByConcentration() {
         return condensedPhase.getGasesSortedByConcentration();
     }
 
-    public double removeCondensedGas(AtmosphereGasType atmosphereGasType, double amount) {
-        return condensedPhase.removeGas(atmosphereGasType, amount);
+    /**
+     * Strips a specified mass allocation away from the target condensed array slot.
+     *
+     * @param gasType The target chemical compound structural reference to drain
+     * @param amount            Target mass quantity to withdraw measured in kilograms
+     * @return The remaining mass deficit quantity that could not be removed if supply was insufficient
+     */
+    public double removeCondensedGas(AtmosphereGasType gasType, double amount) {
+        return condensedPhase.removeGas(gasType, amount);
     }
 
-    public void addCondensedGas(AtmosphereGasType atmosphereGasType, double amount) {
-        condensedPhase.addGas(atmosphereGasType, amount);
+    /**
+     * Injects a specified mass allocation into the targeting condensed array index slot.
+     *
+     * @param gasType The targeting chemical compound structural reference
+     * @param amount            Mass quantity to inject measured in kilograms
+     */
+    public void addCondensedGas(AtmosphereGasType gasType, double amount) {
+        condensedPhase.addGas(gasType, amount);
     }
 
-    public DoubleBinding getCondensedGasPercentage(AtmosphereGasType atmosphereGasType) {
-        return condensedPhase.getGasPercentage(atmosphereGasType);
+    /**
+     * Computes or retrieves a cached reactive binding evaluating the condensed mass ratio of a specific gas (0.0 to 1.0).
+     *
+     * @param gasType The target chemical gas profile to evaluate
+     * @return A lazily evaluated DoubleBinding tracking the percentage of the selected frozen asset on the crust
+     */
+    public DoubleBinding getCondensedGasPercentage(AtmosphereGasType gasType) {
+        return condensedPhase.getGasPercentage(gasType);
     }
 
+    /**
+     * Evaluates if the condensed phase repository contains active mass aggregates.
+     *
+     * @return True if the internal absolute condensed mass registry strictly exceeds zero kilograms
+     */
     public boolean hasCondensedGases() {
         return condensedPhase.hasPhase();
     }

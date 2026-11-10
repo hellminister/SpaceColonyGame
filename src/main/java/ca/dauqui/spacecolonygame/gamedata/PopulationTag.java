@@ -3,6 +3,7 @@ package ca.dauqui.spacecolonygame.gamedata;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
 
@@ -13,8 +14,8 @@ import java.util.logging.Logger;
  * Represents an immutable operational demographic profiling tag applied to colony populations.
  * Governs ideological, physiological, or occupational compatibility matrices, restricting or
  * enabling shared habitation and deployment rules within settlement structures.
- * All technical documentation is standardized on Canadian English requirements.
  *
+ * @param ordinal          The unique zero-based sequential index allocated during parsing for array indexing
  * @param id               The unique string identifier token tracking this demographic tag
  * @param incompatibleTags An unmodifiable set of tags that cannot coexist with this profile
  * @param name             The reactive localized text property layer bound to UI rendering pipelines
@@ -23,10 +24,11 @@ import java.util.logging.Logger;
  */
 @Localized
 public record PopulationTag(
+        int ordinal,
         String id,
         Set<PopulationTag> incompatibleTags,
         ReadOnlyStringProperty name
-) implements Localizable {
+) implements Localizable, EnumLike {
     private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/populationtag.properties";
     private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
@@ -70,7 +72,7 @@ public record PopulationTag(
             if (tag == null) {
                 // Initializes a transient mutable set that will act beneath the unmodifiable view wrapper
                 incompatibleTags = new HashSet<>();
-                tag = new PopulationTag(id, incompatibleTags);
+                tag = new PopulationTag(nextOrdinal(), id, incompatibleTags);
                 targetMap.put(id, tag);
                 incompatibleTagSets.put(tag, incompatibleTags);
             } else {
@@ -83,6 +85,9 @@ public record PopulationTag(
         /**
          * Transient structural carrier record deployed exclusively during the data-parsing phase
          * to transport linked mutable collections across initialization gates.
+         *
+         * @param tag              The active demographic tag model compiled inside this processing block
+         * @param incompatibleTags The underlying mutable collection storing bidirectional social restrictions
          */
         private record Result(PopulationTag tag, Set<PopulationTag> incompatibleTags) {}
 
@@ -106,8 +111,16 @@ public record PopulationTag(
         return tags.get(id);
     }
 
-    private PopulationTag(String id, Set<PopulationTag> incompatibleTags) {
-        this(id, Collections.unmodifiableSet(incompatibleTags), Localize.getProperty(ENUMS_BUNDLE, "PopulationTag." + id));
+    /**
+     * Package-private secondary constructor designed to dynamically bind unmodifiable view
+     * boundaries over mutable graph nodes during the initial properties bootup sweep.
+     *
+     * @param ordinal          The unique sequential array index assigned to this demographic profile
+     * @param id               The unique string registration parameter tracking database entries
+     * @param incompatibleTags The mutable social data set containing tracking restrictions
+     */
+    private PopulationTag(int ordinal, String id, Set<PopulationTag> incompatibleTags) {
+        this(ordinal, id, Collections.unmodifiableSet(incompatibleTags), Localize.getProperty(ENUMS_BUNDLE, "PopulationTag." + id));
     }
 
     /**

@@ -1,13 +1,15 @@
 package ca.dauqui.spacecolonygame.util;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Abstract class used to load static information about the type of data using this structure
  * Acts like a sort of weak enum
  * @param <T> The type of the class using this structure
  */
-public abstract class TypesafeConstants<T> {
+public abstract class TypesafeConstants<T extends EnumLike> {
+    private final AtomicInteger indexForNextValue = new AtomicInteger(0);
     /**
      * The immutable map containing each available objects linked to its key
      */
@@ -33,6 +35,18 @@ public abstract class TypesafeConstants<T> {
         parseProperties(props, targetMap);
 
         fallback(targetMap);
+    }
+
+    /**
+     * Generates and returns a unique, sequential zero-based index mapping to mimic
+     * native enum ordinals for file-driven configuration constants.
+     * Utilizes atomic, thread-safe counter operations to safely guarantee
+     * unique allocation barriers across asynchronous bootstrap loading pipelines.
+     *
+     * @return The next unique, sequential zero-based ordinal index scalar
+     */
+    protected int nextOrdinal(){
+        return indexForNextValue.getAndIncrement();
     }
 
     /**

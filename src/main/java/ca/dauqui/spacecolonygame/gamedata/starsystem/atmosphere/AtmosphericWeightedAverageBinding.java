@@ -3,34 +3,40 @@ package ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere;
 import javafx.beans.binding.DoubleBinding;
 
 /**
- * Specialized child binding that computes a weighted average score
- * for a given gas property using a functional extractor lambda.
+ * Specialized structural binding computing a real-time weighted average score
+ * for localized planetary air property constants across active phase dimensions.
+ * Direct dependency attachments bypass traditional structural iterations to yield ultra-low latency updates.
+ *
+ * @author Jean-François Quintal
  */
-final class AtmosphericWeightedAverageBinding extends AtmosphereMapTrackingBinding {
+final class AtmosphericWeightedAverageBinding extends DoubleBinding{
     private final java.util.function.ToDoubleFunction<AtmosphereGasType> coefficientExtractor;
-    private final DoubleBinding totalMassBinding;
+    private final PhaseReservoir reservoir;
 
+    /**
+     * Spans a reactive tracking connection mapping raw structural property values
+     * against dynamic total mass denominator changes.
+     *
+     * @param reservoir The target PhaseReservoir composition source to track
+     * @param extractor Functional criteria mapping coefficient extractions from chemical assets
+     */
     public AtmosphericWeightedAverageBinding(PhaseReservoir reservoir,
                                              java.util.function.ToDoubleFunction<AtmosphereGasType> extractor) {
-        super(reservoir.getGases());
-        totalMassBinding = reservoir.getTotalMass();
+        this.reservoir = reservoir;
         this.coefficientExtractor = extractor;
-        bind(totalMassBinding); // Automatically recomputes if global air density changes
+        bind(reservoir.gasesValues());
     }
 
     @Override
     protected double computeValue() {
-        double totalMass = totalMassBinding.get();
-        if (totalMass <= 0.0 || bound.isEmpty()) {
+        double totalMass = reservoir.getTotalMass().get();
+        if (totalMass <= 0.0) {
             return 0.0;
         }
 
         double totalScore = 0.0;
-        for (var entry : bound.entrySet()) {
-            AtmosphereGasType gas = entry.getKey();
-            if (gas != null) {
-                totalScore += entry.getValue().get() * coefficientExtractor.applyAsDouble(gas);
-            }
+        for (var gas : AtmosphereGasType.getAtmosphereGazTypes()) {
+                totalScore += reservoir.getMassFor(gas) * coefficientExtractor.applyAsDouble(gas);
         }
 
         return totalScore / totalMass;

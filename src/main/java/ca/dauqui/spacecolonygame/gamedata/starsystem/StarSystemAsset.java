@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Point3D;
@@ -13,6 +14,8 @@ import java.util.logging.Logger;
  * Immutable structural record engineered to capture, sanitize, and expose stellar system core parameters.
  * Manages parent astronomical characteristics and maps attached orbiting planet assets.
  *
+ * @param ordinal      The unique zero-based sequential index allocated during parsing for array indexing
+ * @param id           The unique alphanumeric database lookup key matching the primary star name
  * @param data         The internal optimized enum map storing sanitized string values per column indices
  * @param coordinate   The three-dimensional space mapping vectors evaluated in light-years
  * @param name         The reactive localized primary title designation bound to the database keys
@@ -22,12 +25,14 @@ import java.util.logging.Logger;
  * @author Jean-François Quintal
  */
 public record StarSystemAsset(
+        int ordinal,
+        String id,
         Map<StarDataColumn, String> data,
         Point3D coordinate,
         ReadOnlyStringProperty name,
         ReadOnlyStringProperty description,
-        List<PlanetAsset> planetAssets // Kept mutable internally during the data parsing phase
-) {
+        List<PlanetAsset> planetAssets
+) implements EnumLike {
     private static final Logger LOG = Logger.getLogger(StarSystemAsset.class.getName());
     private static final String STAR_DATA_PATH = "/ca/dauqui/spacecolonygame/data/starsystems/StarData.txt";
     private static final String STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.data.star_data";
@@ -61,10 +66,12 @@ public record StarSystemAsset(
      * Canonical constructor overload designed to accept raw row strings.
      * Delegates complex parsing out of the pre-construction phase to bypass java:S8444.
      *
+     * @param ordinal  The unique sequential array index assigned to this specific stellar entry
      * @param dataStr The raw tokens sliced from a single data row entry
      */
-    private StarSystemAsset(String[] dataStr) {
-        this(
+    private StarSystemAsset(int ordinal, String[] dataStr) {
+        this(ordinal,
+                dataStr[StarDataColumn.NAME.ordinal()].trim(),
                 Collections.unmodifiableMap(StarDataColumn.parseRow(dataStr)),
                 new Point3D(
                         Double.parseDouble(dataStr[StarDataColumn.X.ordinal()].trim()),
@@ -188,6 +195,11 @@ public record StarSystemAsset(
         private static final double MAX_DISTANCE = 25.0;
         private final List<StarSystemAsset> sortedStarSystemAssets;
 
+        /**
+         * Core constants factory initializer configuring data source resolution paths.
+         *
+         * @param starDataPath The internal absolute resource file path mapping raw catalogue parameters
+         */
         public StarSystemAssetConstants(String starDataPath) {
             sortedStarSystemAssets = new ArrayList<>();
             super(starDataPath);
@@ -237,13 +249,21 @@ public record StarSystemAsset(
             }
         }
 
+        /**
+         * Dispatches structural token configurations to compile raw stellar entities or attach orbiting sub-bodies.
+         *
+         * @param text      The current parsed tokens array block reflecting a singular row entry
+         * @param last      The immediate prior successfully parsed parent StarSystemAsset context
+         * @param targetMap The active parsing dictionary accumulating completed global system records
+         * @return The updated or verified tracking reference representing the current active master system context
+         */
         private StarSystemAsset treatStellarBody(String[] text, StarSystemAsset last, Map<String, StarSystemAsset> targetMap) {
             String type = text[StarDataColumn.TY.ordinal()].trim().replace("?", "");
 
             switch (type) {
                 case "S" -> {
-                    var newSystem = new StarSystemAsset(text);
-                    targetMap.put(newSystem.getSafe(StarDataColumn.NAME), newSystem);
+                    var newSystem = new StarSystemAsset(nextOrdinal(), text);
+                    targetMap.put(newSystem.id(), newSystem);
                     sortedStarSystemAssets.add(newSystem); // since they are read in sorted order
                     return newSystem;
                 }
@@ -263,6 +283,9 @@ public record StarSystemAsset(
             }
         }
 
+        /**
+         * @return An unmodifiable view tracking star systems sequentially sorted near-to-far
+         */
         private List<StarSystemAsset> getSortedStarSystemAssets() {
             return Collections.unmodifiableList(sortedStarSystemAssets);
         }

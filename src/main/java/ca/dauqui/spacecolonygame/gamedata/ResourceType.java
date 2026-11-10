@@ -4,6 +4,7 @@ import ca.dauqui.spacecolonygame.gamedata.tiledata.TerrainType;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.MathFunction;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
  * mirroring advanced hard-science space simulation layouts.
  * </p>
  *
+ * @param ordinal    The unique zero-based sequential index allocated during parsing for array indexing
  * @param id         The unique operational string token identifier tracking this resource type
  * @param parameters The underlying geological constraints and environmental behaviour parameters
  * @param name       The reactive localized string property layer bound to user interface frameworks
@@ -28,10 +30,11 @@ import java.util.stream.Collectors;
  */
 @Localized
 public record ResourceType(
+        int ordinal,
         String id,
         GenerationParameters parameters,
         ReadOnlyStringProperty name
-) implements Localizable {
+) implements Localizable, EnumLike {
     // Path configuration identifying the core resource data matrix file
     private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/resourceType.properties";
     // Path configuration identifying the core resource localization file
@@ -61,7 +64,7 @@ public record ResourceType(
                         }
 
                         // Employs the private utility constructor to inject localized UI bindings natively
-                        targetMap.put(prefix, new ResourceType(prefix, parameters2));
+                        targetMap.put(prefix, new ResourceType(nextOrdinal(), prefix, parameters2));
                     }
                 }
             }
@@ -172,9 +175,15 @@ public record ResourceType(
         return tags.getAll();
     }
 
-
-    private ResourceType(String id, GenerationParameters parameters) {
-        this(id, parameters, Localize.getProperty(ENUMS_BUNDLE, "ResourceType." + id));
+    /**
+     * Package-private canonical constructor overload mapping the localized text property pipeline.
+     *
+     * @param ordinal    The unique zero-based sequential index allocated during properties bootup
+     * @param id         The unique alphanumeric database lookup key matching the property prefix
+     * @param parameters The compiled structural generation models assigned to this resource type
+     */
+    private ResourceType(int ordinal, String id, GenerationParameters parameters) {
+        this(ordinal, id, parameters, Localize.getProperty(ENUMS_BUNDLE, "ResourceType." + id));
     }
 
     /**
@@ -267,15 +276,19 @@ public record ResourceType(
             MathFunction function,
             double[] parameters
     ) {
+
+        /**
+         * Compact constructor implementing defensive cloning over primitive arrays.
+         * Explicitly breaks external reference tracking links to isolate internal physics configurations.
+         *
+         * @param function   The operational curve behaviour algorithm to execute
+         * @param parameters The continuous coefficient payload array driving the algebraic equations
+         */
         public InfluenceModel(MathFunction function, double[] parameters) {
             this.function = function;
             this.parameters = parameters.clone();
         }
 
-        /**
-         * Compact constructor implementing defensive cloning over primitive arrays.
-         * Explicitly breaks external reference tracking links to isolate internal physics configurations.
-         */
         @Override
         public boolean equals(Object o) {
             if (!(o instanceof InfluenceModel(MathFunction function1, double[] parameters1))) return false;
