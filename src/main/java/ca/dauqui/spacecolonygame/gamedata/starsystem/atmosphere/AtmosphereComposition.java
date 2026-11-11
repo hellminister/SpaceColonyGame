@@ -2,8 +2,12 @@ package ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere;
 
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.beans.binding.DoubleBinding;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -23,6 +27,8 @@ public class AtmosphereComposition {
     private final DoubleBinding greenhouseFactor;
     private final DoubleBinding surfaceTemperature;
 
+    private final double massPerBar;
+
     /**
      * Initializes the planetary composition matrix, binding structural planetary dimensions
      * against dynamic gas masses to evaluate macro-climatic criteria.
@@ -40,6 +46,8 @@ public class AtmosphereComposition {
         double conversionValue = ("Re".equals(radiusUnit)) ? 6371000 : 69911000; // meters
         double surfaceArea = 4 * Math.PI * Math.pow(radius * conversionValue, 2);
 
+        this.massPerBar = (surfaceArea * 100000.0) / gravity;
+
         this.pressure = new DoubleBinding() {
             {
                 bind(vaporPhase.getTotalMass());
@@ -47,7 +55,8 @@ public class AtmosphereComposition {
 
             @Override
             protected double computeValue() {
-                return (vaporPhase.getTotalMass().get() * gravity) / (surfaceArea * 100000);
+                double mass = vaporPhase.getTotalMass().get();
+                return (mass <= 0.0 || massPerBar <= 0.0) ? 0.0 : mass / massPerBar;
             }
         };
 
@@ -62,8 +71,14 @@ public class AtmosphereComposition {
 
             @Override
             protected double computeValue() {
-                double greenhouseMultiplier = 1.0 + (Math.log1p(pressure.get()) * (greenhouseFactor.get() / 100.0));
-                double computedTemp = tempEquilibrium * greenhouseMultiplier;
+                double computedTemp = tempEquilibrium;
+                double currentPressure = pressure.get();
+                double ghFactor = greenhouseFactor.get();
+
+                if (currentPressure > 0.0 && !Double.isNaN(ghFactor)) {
+                    double greenhouseMultiplier = 1.0 + (Math.log1p(currentPressure) * (ghFactor / 100.0));
+                    computedTemp *= greenhouseMultiplier;
+                }
 
                 // If the world is tidally locked, apply the permanent background radiation cooling offset natively
                 if (isTidallyLocked) {
@@ -79,13 +94,13 @@ public class AtmosphereComposition {
             private boolean isUpdating = false;
 
             @Override
-            public void invalidated(javafx.beans.Observable observable) {
+            public void invalidated(Observable observable) {
                 if (isUpdating) return;
 
                 Platform.runLater(() -> {
                     isUpdating = true;
                     try {
-                        updatePhaseTransitions();
+                        processAtmosphericCycle();
                     } finally {
                         isUpdating = false;
                     }
@@ -166,30 +181,45 @@ public class AtmosphereComposition {
     }
 
     /**
+     * Executes a complete atmospheric simulation step in two sequential, atomic phases:
+     * stoichiometric chemical reactions followed by thermodynamic phase transitions.
+     * Remember : must be called at the end of the turn
+     */
+    public void processAtmosphericCycle(){
+        updateChemicalReactions();
+        updatePhaseTransitions();
+    }
+
+    /**
      * Evaluates dynamic partial pressures against local saturation layers.
      * Condenses gas overheads into surface ice sheets using addCondensedGas,
      * or sublimates ground frost back into vapour using removeCondensedGas.
      */
     private void updatePhaseTransitions() {
-        double currentTotalPressure = getPressure();
         double currentTemp = getSurfaceTemperature();
-        double totalMass = getVaporTotalMass().get();
 
-        if (totalMass <= 0.0) return;
+        if (!hasAtmosphere() && !hasCondensedGases()){
+            return;
+        }
 
-        // Loop through a copy to prevent concurrent modification exceptions during map shifts
-        for (AtmosphereGasType gas : AtmosphereGasType.getAtmosphereGazTypes()) {
-            double gasMass = getVaporMassFor(gas);
-            double partialPressure = (gasMass / totalMass) * currentTotalPressure;
-            double satPressure = gas.calculateSaturationPressure(currentTemp);
+        startTransaction();
+        try {
+            // Loop through a copy to prevent concurrent modification exceptions during map shifts
+            for (AtmosphereGasType gas : AtmosphereGasType.getAtmosphereGazTypes()) {
+                double gasMass = getVaporMassFor(gas);
+                double partialPressure = gasMass / massPerBar;
+                double satPressure = gas.calculateSaturationPressure(currentTemp);
 
-            if (partialPressure > satPressure) {
-                // Saturated status: calculate excess mass to condense out of the air
-                condensingVapourGas(gas, satPressure, currentTotalPressure, totalMass, gasMass);
-            } else if (partialPressure < satPressure) {
-                // Unsaturated status: check if we have ground reserves to sublimate
-                evaporatingCondensedGas(gas, satPressure, currentTotalPressure, totalMass, gasMass);
+                if (partialPressure > satPressure) {
+                    // Saturated status: calculate excess mass to condense out of the air
+                    condensingVapourGas(gas, satPressure, gasMass);
+                } else if (partialPressure < satPressure) {
+                    // Unsaturated status: check if we have ground reserves to sublimate
+                    evaporatingCondensedGas(gas, satPressure, gasMass);
+                }
             }
+        } finally {
+            commitTransaction();
         }
     }
 
@@ -199,15 +229,13 @@ public class AtmosphereComposition {
      *
      * @param gas                  The chemical gas type signature processing sublimation
      * @param satPressure          The computed saturation vapour pressure of the target compound at current temperature (Bars)
-     * @param currentTotalPressure The absolute macro barometric pressure currently exerted by the global vapour phase (Bars)
-     * @param totalMass            The cumulative active mass aggregate currently present inside the vapour reservoir (kg)
      * @param gasMass              The current raw individual mass distribution of this gas element floating in the air (kg)
      */
-    private void evaporatingCondensedGas(AtmosphereGasType gas, double satPressure, double currentTotalPressure, double totalMass, double gasMass) {
+    private void evaporatingCondensedGas(AtmosphereGasType gas, double satPressure, double gasMass) {
         double groundReserve = getCondensedGasMassFor(gas);
 
         if (groundReserve > 0.0) {
-            double targetPartialMass = (satPressure / currentTotalPressure) * totalMass;
+            double targetPartialMass = satPressure * massPerBar;
             double massDeficit = targetPartialMass - gasMass;
 
             if (massDeficit > 0.0) {
@@ -229,18 +257,220 @@ public class AtmosphereComposition {
      *
      * @param gas                  The chemical gas type signature processing condensation
      * @param satPressure          The computed saturation vapour pressure of the target compound at current temperature (Bars)
-     * @param currentTotalPressure The absolute macro barometric pressure currently exerted by the global vapour phase (Bars)
-     * @param totalMass            The cumulative active mass aggregate currently present inside the vapour reservoir (kg)
      * @param gasMass              The current raw individual mass distribution of this gas element floating in the air (kg)
      */
-    private void condensingVapourGas(AtmosphereGasType gas, double satPressure, double currentTotalPressure, double totalMass, double gasMass) {
-        double maxAllowedMass = (satPressure / currentTotalPressure) * totalMass;
+    private void condensingVapourGas(AtmosphereGasType gas, double satPressure, double gasMass) {
+        double maxAllowedMass = satPressure * massPerBar;
         double massToCondense = gasMass - maxAllowedMass;
 
         if (massToCondense > 0.0) {
             removeAtmosphereGas(gas, massToCondense);
             addCondensedGas(gas, massToCondense);
         }
+    }
+
+    /**
+     * Evaluates all registered chemical reactions against ambient temperature and partial pressure thresholds.
+     * Allocates shared reactants proportionally when concurrent reactions compete for the same gas.
+     */
+    private void updateChemicalReactions() {
+        double currentTemp = getSurfaceTemperature();
+
+        if (hasAtmosphere()) {
+            Collection<AtmosphericReaction> allReactions = AtmosphericReaction.getAllReactions();
+            if (!allReactions.isEmpty()) {
+                int gasCount = AtmosphereGasType.getAtmosphereGazTypes().size();
+                double[] totalGasDemand = new double[gasCount];
+                double[] reactionTheoreticalCycles = new double[allReactions.size()];
+
+                // PASS 1: Filter eligible reactions and compute theoretical stoichiometric cycles
+                var activeReactions = getEligibleReactions(allReactions, currentTemp, reactionTheoreticalCycles, totalGasDemand);
+
+                if (!activeReactions.isEmpty()) {
+
+                    // PASS 2: Compute proportional throttling ratios for over-demanded reactants
+                    double[] gasThrottleFactors = computeThrottleFactors(gasCount, totalGasDemand);
+
+                    startTransaction();
+                    try {
+                        // PASS 3: Apply throttled stoichiometric conversions via the active transaction
+                        applyReactions(activeReactions, gasThrottleFactors, reactionTheoreticalCycles);
+                    } finally {
+                        commitTransaction();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes proportional throttling factors (0.0 to 1.0) for each gas to prevent negative mass balances
+     * when multiple concurrent reactions compete for the same limited reactant.
+     *
+     * @param gasCount       The total number of registered atmospheric gas types
+     * @param totalGasDemand Array indexed by gas ordinal containing cumulative mass requested by active reactions (kg)
+     * @return An array indexed by gas ordinal specifying the allowable execution ratio per gas (1.0 = unthrottled)
+     */
+    private double[] computeThrottleFactors(int gasCount, double[] totalGasDemand) {
+        double[] gasThrottleFactors = new double[gasCount];
+        Arrays.fill(gasThrottleFactors, 1.0);
+
+        for (AtmosphereGasType gas : AtmosphereGasType.getAtmosphereGazTypes()) {
+            int index = gas.ordinal();
+            double available = getVaporMassFor(gas);
+            double demand = totalGasDemand[index];
+            if (demand > available && available > 0.0) {
+                double factor = available / demand;
+                gasThrottleFactors[index] = Double.isFinite(factor) ? factor : 0.0;
+            }
+        }
+        return gasThrottleFactors;
+    }
+
+    /**
+     * Executes throttled stoichiometric conversions for all active reactions within the current atomic transaction,
+     * consuming reactants and generating reaction products into the vapour reservoir.
+     *
+     * @param activeReactions           The list of eligible chemical reactions scheduled for execution
+     * @param gasThrottleFactors        Array indexed by gas ordinal containing proportional scaling factors (0.0 to 1.0)
+     * @param reactionTheoreticalCycles Array indexed by reaction ordinal storing unthrottled reaction cycles
+     */
+    private void applyReactions(List<AtmosphericReaction> activeReactions, double[] gasThrottleFactors, double[] reactionTheoreticalCycles) {
+        for (AtmosphericReaction reaction : activeReactions) {
+            double finalThrottle = 1.0;
+            for (AtmosphereGasType gas : reaction.reactants().keySet()) {
+                finalThrottle = Math.min(finalThrottle, gasThrottleFactors[gas.ordinal()]);
+            }
+
+            double finalizedCycles = reactionTheoreticalCycles[reaction.ordinal()] * finalThrottle;
+            if (finalizedCycles > 1e-6) {
+                for (var reactantEntry : reaction.reactants().entrySet()) {
+                    AtmosphereGasType gas = reactantEntry.getKey();
+                    double massToConsume = finalizedCycles * reactantEntry.getValue() * gas.molecularWeight();
+                    removeAtmosphereGas(gas, massToConsume);
+                }
+
+                for (var productEntry : reaction.products().entrySet()) {
+                    AtmosphereGasType gas = productEntry.getKey();
+                    double massToProduce = finalizedCycles * productEntry.getValue() * gas.molecularWeight();
+                    addAtmosphereGas(gas, massToProduce);
+                }
+            }
+        }
+    }
+
+    /**
+     * Evaluates all registered chemical reactions against current planetary conditions,
+     * filtering eligible reactions and accumulating their theoretical stoichiometric demands.
+     *
+     * @param allReactions              The complete collection of configured chemical reactions in the simulation
+     * @param currentTemp               Current planetary surface temperature expressed in Kelvin
+     * @param reactionTheoreticalCycles Output array indexed by reaction ordinal storing maximum allowed cycles per turn
+     * @param totalGasDemand            Output array indexed by gas ordinal accumulating total mass demanded across all active reactions (kg)
+     * @return A filtered list containing only the chemical reactions eligible to execute during this turn
+     */
+    private List<AtmosphericReaction> getEligibleReactions(Collection<AtmosphericReaction> allReactions, double currentTemp, double[] reactionTheoreticalCycles, double[] totalGasDemand) {
+        List<AtmosphericReaction> activeReactions = new ArrayList<>();
+        for (AtmosphericReaction reaction : allReactions) {
+            if (applicableReaction(reaction, currentTemp)) {
+
+                // Find limiting reactant
+                double maxCycles = calculateMaxCycles(reaction);
+                if (maxCycles <= 0.0) {
+                    continue;
+                }
+
+                double allowedCycles = maxCycles * reaction.reactionRate();
+                if (allowedCycles > 1e-6) {
+                    activeReactions.add(reaction);
+                    reactionTheoreticalCycles[reaction.ordinal()] = allowedCycles;
+
+                    for (var reactantEntry : reaction.reactants().entrySet()) {
+                        AtmosphereGasType gas = reactantEntry.getKey();
+                        double massDemanded = allowedCycles * reactantEntry.getValue() * gas.molecularWeight();
+                        totalGasDemand[gas.ordinal()] += massDemanded;
+                    }
+                }
+            }
+        }
+        return activeReactions;
+    }
+
+    /**
+     * Calculates the maximum number of stoichiometric reaction cycles supported by the limiting reactant.
+     * Enforces an upper finite safety cap to prevent floating-point overflow on massive worlds.
+     *
+     * @param reaction The chemical reaction to evaluate
+     * @return The maximum allowable reaction cycles capped at 1e30, or 0.0 if a reactant is depleted
+     */
+    private double calculateMaxCycles(AtmosphericReaction reaction) {
+        double maxCycles = Double.MAX_VALUE;
+        for (var reactantEntry : reaction.reactants().entrySet()) {
+            AtmosphereGasType gas = reactantEntry.getKey();
+            double availableMass = getVaporMassFor(gas);
+            if (availableMass <= 0.0) {
+                maxCycles = 0.0;
+                break;
+            }
+
+            double potentialCycles = availableMass / (reactantEntry.getValue() * gas.molecularWeight());
+            if (Double.isFinite(potentialCycles)) {
+                maxCycles = Math.min(maxCycles, potentialCycles);
+            }
+        }
+
+        return Math.min(maxCycles, 1e30);
+    }
+
+    /**
+     * Evaluates whether ambient thermal and partial pressure conditions satisfy
+     * the activation thresholds required to ignite a specific chemical reaction.
+     *
+     * @param reaction             The candidate chemical reaction to evaluate
+     * @param currentTemp          Current planetary surface temperature in Kelvin
+     * @return True if temperature and all reactant partial pressure thresholds are met
+     */
+    private boolean applicableReaction(AtmosphericReaction reaction, double currentTemp) {
+        return currentTemp >= reaction.minTemperature() && arePartialPressuresMet(reaction);
+    }
+
+    /**
+     * Evaluates whether the atmosphere contains a volatile mixture capable of igniting
+     * during high-friction atmospheric entry, regardless of current ambient surface temperature.
+     *
+     * @return True if at least one registered chemical reaction satisfies all its minimum partial pressure thresholds
+     */
+    public boolean hasExplosiveAtmosphere() {
+        if (!hasAtmosphere()) {
+            return false;
+        }
+
+        for (AtmosphericReaction reaction : AtmosphericReaction.getAllReactions()) {
+            if (arePartialPressuresMet(reaction)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks whether all reactant partial pressures meet or exceed the minimum ignition thresholds
+     * defined for a specific chemical reaction.
+     *
+     * @param reaction The candidate chemical reaction to evaluate
+     * @return True if all required partial pressures are satisfied
+     */
+    private boolean arePartialPressuresMet(AtmosphericReaction reaction) {
+        for (var thresholdEntry : reaction.minPartialPressures().entrySet()) {
+            AtmosphereGasType gas = thresholdEntry.getKey();
+            double minRequiredBar = thresholdEntry.getValue();
+            double partialPressure = getVaporMassFor(gas) / massPerBar;
+
+            if (partialPressure < minRequiredBar) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -375,6 +605,22 @@ public class AtmosphereComposition {
      */
     public boolean hasCondensedGases() {
         return condensedPhase.hasPhase();
+    }
+
+    /**
+     * Begins an atomic simulation turn across both vapour and condensed phase reservoirs.
+     */
+    public void startTransaction() {
+        vaporPhase.startTransaction();
+        condensedPhase.startTransaction();
+    }
+
+    /**
+     * Commits all pending atmospheric and surface phase changes simultaneously.
+     */
+    public void commitTransaction() {
+        vaporPhase.commitTransaction();
+        condensedPhase.commitTransaction();
     }
 
 }

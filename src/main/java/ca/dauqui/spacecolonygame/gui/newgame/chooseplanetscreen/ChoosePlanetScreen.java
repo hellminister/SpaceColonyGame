@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Screen layout container for the planetary selection phase.
@@ -251,48 +252,7 @@ public class ChoosePlanetScreen extends VBox {
         var atmosphereToolTip = new Tooltip();
         atmosphereToolTip.setShowDelay(Duration.millis(50));
         atmosphereToolTip.setHideDelay(Duration.ONE);
-        atmosphereToolTip.textProperty().bind(new StringBinding() {
-            {
-                bind(localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet);
-            }
-
-            @Override
-            protected String computeValue() {
-                if (selectedPlanet.get() == null){
-                    return "";
-                }
-
-                if (!probeAndSatelliteEffects.contains(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_COMPOSITION)){
-                    return "?";
-                }
-
-                StringBuilder text = new StringBuilder();
-
-                AtmosphereComposition atmosphereComposition = selectedPlanet.get().getPlanet().atmosphereComposition();
-                if (!atmosphereComposition.hasAtmosphere()) {
-                    text.append(localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get());
-                } else {
-                    text.append(atmosphereComposition.getAtmosphereGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getAtmosphereGasPercentage(gasType).get() > 0.0)
-                            .map(gasType -> String.format("%s %.1f%%",
-                                    gasType.name().get(),
-                                    atmosphereComposition.getAtmosphereGasPercentage(gasType).get() * 100.0))
-                            .collect(java.util.stream.Collectors.joining("\n")));
-                }
-
-                if (atmosphereComposition.hasCondensedGases()){
-                    text.append("\n\n").append("CONDENSED GASES").append("\n\n")
-                            .append(atmosphereComposition.getCondensedGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getCondensedGasPercentage(gasType).get() > 0.0)
-                                    .map(gasType -> String.format("%s %.1f%%",
-                                            gasType.name().get(),
-                                            atmosphereComposition.getCondensedGasPercentage(gasType).get() * 100.0))
-                                    .collect(java.util.stream.Collectors.joining("\n")));
-                }
-
-
-
-                return text.toString();
-            }
-        });
+        atmosphereToolTip.textProperty().bind(createAtmosphereToolTipText());
         atmosphere.setTooltip(atmosphereToolTip);
         infoGrid.addInfo(0, 4, localizedProperty("ChoosePlanetScreen.TECTONIC_TYPE"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_TECTONIC, planet -> planet.getPlanet().tectonic().toString()));
@@ -323,6 +283,54 @@ public class ChoosePlanetScreen extends VBox {
         infoGrid.setAlignment(Pos.CENTER);
 
         return infoGrid;
+    }
+
+    private StringBinding createAtmosphereToolTipText() {
+        return new StringBinding() {
+            {
+                bind(localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet);
+            }
+
+            @Override
+            protected String computeValue() {
+                if (selectedPlanet.get() == null) {
+                    return "";
+                }
+
+                if (!probeAndSatelliteEffects.contains(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_COMPOSITION)) {
+                    return "?";
+                }
+
+                StringBuilder text = new StringBuilder();
+
+                AtmosphereComposition atmosphereComposition = selectedPlanet.get().getPlanet().atmosphereComposition();
+                if (!atmosphereComposition.hasAtmosphere()) {
+                    text.append(localizedProperty("ChoosePlanetScreen.NO_ATMOSPHERE").get());
+                } else {
+                    if (atmosphereComposition.hasExplosiveAtmosphere()) {
+                        text.append(localizedProperty("ChoosePlanetScreen.EXPLOSION_RISK").get()).append("\n\n");
+                    }
+
+                    text.append(atmosphereComposition.getAtmosphereGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getAtmosphereGasPercentage(gasType).get() > 0.0)
+                            .map(gasType -> String.format("%s %.1f%%",
+                                    gasType.name().get(),
+                                    atmosphereComposition.getAtmosphereGasPercentage(gasType).get() * 100.0))
+                            .collect(Collectors.joining("\n")));
+                }
+
+                if (atmosphereComposition.hasCondensedGases()) {
+                    text.append("\n\n").append(localizedProperty("ChoosePlanetScreen.CONDENSED_GASES").get()).append("\n\n")
+                            .append(atmosphereComposition.getCondensedGasesSortedByConcentration().stream().filter(gasType -> atmosphereComposition.getCondensedGasPercentage(gasType).get() > 0.0)
+                                    .map(gasType -> String.format("%s %.1f%%",
+                                            gasType.name().get(),
+                                            atmosphereComposition.getCondensedGasPercentage(gasType).get() * 100.0))
+                                    .collect(Collectors.joining("\n")));
+                }
+
+
+                return text.toString();
+            }
+        };
     }
 
     /**

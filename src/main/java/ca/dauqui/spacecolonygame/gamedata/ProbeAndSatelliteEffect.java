@@ -61,7 +61,11 @@ public enum ProbeAndSatelliteEffect {
     REVEAL_SITE_RESOURCES,
 
     /** Penetrates the planet's mantle to map subterranean caves, tunnels, and bedrock resource pockets. */
-    REVEAL_UNDERGROUND;
+    REVEAL_UNDERGROUND,
+
+    /** Forces atmospheric reactions even if he temperature is unsufficient */
+    FORCE_ATMOSPHERIC_REACTIONS,
+    ;
 
     // Guarded unmodifiable sets constructed once at class loading phase
     private static final Set<ProbeAndSatelliteEffect> PLANETARY_EFFECTS = Collections.unmodifiableSet(EnumSet.of(

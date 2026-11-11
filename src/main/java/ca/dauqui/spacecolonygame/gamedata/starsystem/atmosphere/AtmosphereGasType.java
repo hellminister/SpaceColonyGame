@@ -106,7 +106,7 @@ public record AtmosphereGasType(
      * @return Computed saturation vapour partial pressure threshold scalar limits in Bars
      */
     public double calculateSaturationPressure(double temperatureKelvin) {
-        if (temperatureKelvin <= 0 || (temperatureKelvin + antoineC) <= 0) return 0.0;
+        if (Double.isNaN(temperatureKelvin) || temperatureKelvin <= 0 || (temperatureKelvin + antoineC) <= 0) return 0.0;
         double logP = antoineA - (antoineB / (temperatureKelvin + antoineC));
         return Math.pow(10, logP);
     }

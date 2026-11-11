@@ -45,8 +45,8 @@ public final class PlanetGenerator {
      */
     @SuppressWarnings("java:S3776") // trying to reduce cognitive complexity of this comprehensible method would raise overall complexity of the class
     public Planet generate(StarSystemAsset probed, PlanetAsset ps) {
-        double starLum = probed.bolometricLum() == -1 ? 1.0 : probed.bolometricLum();
-        double starMass = probed.mass() == -1 ? 1.0 : probed.mass();
+        double starLum = probed.bolometricLum() <= 0.0 ? 1.0 : probed.bolometricLum();
+        double starMass = probed.mass() <= 0.0 ? 1.0 : probed.mass();
         double distance = nextDistance(starLum);
         double receivedLight = starLum / Math.pow(distance, 2);
 
@@ -54,7 +54,7 @@ public final class PlanetGenerator {
         String radiusUnit = ps.getRadiusUnit().replace("?", "");
 
         double radius = ps.getRadius();
-        if (radius == -1) {
+        if (radius <= 0.0) {
             double roll = RAND.nextDouble();
             if (roll < 0.6) {
                 type = "PT";
@@ -228,13 +228,18 @@ public final class PlanetGenerator {
     private static void generateAtmosphere(String type, AtmosphereComposition composition, double gravity, double radius, String radiusUnit, double tempEquilibrium,
                                              double volcanism) {
 
-        // Generate the atmosphere for a gas giant
-        if (!"PT".equals(type)) {
-            generateGasGiantAtmosphere(composition);
-        } else if (gravity > 0.20 && tempEquilibrium < 500) {
-            generateTelluricPlanetAtmosphere(composition, gravity, radius, radiusUnit, tempEquilibrium, volcanism);
-        }
+        composition.startTransaction();
 
+        try {
+            // Generate the atmosphere for a gas giant
+            if (!"PT".equals(type)) {
+                generateGasGiantAtmosphere(composition);
+            } else if (gravity > 0.20 && tempEquilibrium < 500) {
+                generateTelluricPlanetAtmosphere(composition, gravity, radius, radiusUnit, tempEquilibrium, volcanism);
+            }
+        } finally {
+            composition.commitTransaction();
+        }
     }
 
     /**
