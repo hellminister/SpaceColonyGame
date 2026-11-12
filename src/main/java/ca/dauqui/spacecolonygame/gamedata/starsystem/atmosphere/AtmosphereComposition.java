@@ -113,7 +113,7 @@ public class AtmosphereComposition {
      * @return the air pressure in Bars
      */
     public double getPressure() {
-        return pressure.get();
+        return pressureProperty().get();
     }
 
     /**
@@ -134,14 +134,14 @@ public class AtmosphereComposition {
      * @return The toxicity level of the atmosphere as a binding (0.0 to 1.0) where 1.0 is most toxic
      */
     public DoubleBinding toxicityProperty() {
-        return toxicity;
+        return toxicityProperty();
     }
 
     /**
      * @return The corrosiveness level of the atmosphere (0.0 to 1.0) where 1.0 is most corrosive
      */
     public double getCorrosiveness() {
-        return corrosiveness.get();
+        return corrosivenessProperty().get();
     }
 
     /**
@@ -156,7 +156,7 @@ public class AtmosphereComposition {
      * @return The greenhouse factor of the atmosphere
      */
     public double getGreenhouseFactor() {
-        return greenhouseFactor.get();
+        return greenhouseFactorProperty().get();
     }
 
     /**
@@ -170,7 +170,7 @@ public class AtmosphereComposition {
      * @return the temperature of the planet affected by the greenhouse effect
      */
     public double getSurfaceTemperature() {
-        return surfaceTemperature.get();
+        return surfaceTemperatureProperty().get();
     }
 
     /**
@@ -186,7 +186,22 @@ public class AtmosphereComposition {
      * Remember : must be called at the end of the turn
      */
     public void processAtmosphericCycle(){
-        updateChemicalReactions();
+        updateChemicalReactions(false);
+        updatePhaseTransitions();
+    }
+
+    /**
+     * Forces all eligible chemical reactions to ignite and burn to completion regardless of ambient temperature,
+     * followed by immediate thermodynamic condensation of the resulting products.
+     *
+     * @param maxCycle The maximum number of reaction iterations permitted to prevent infinite loops
+     */
+    public void forceAtmosphericReactions(int maxCycle) {
+        int safetyCounter = 0;
+        while (updateChemicalReactions(true) && safetyCounter < maxCycle) {
+            safetyCounter++;
+        }
+
         updatePhaseTransitions();
     }
 
@@ -272,10 +287,13 @@ public class AtmosphereComposition {
     /**
      * Evaluates all registered chemical reactions against ambient temperature and partial pressure thresholds.
      * Allocates shared reactants proportionally when concurrent reactions compete for the same gas.
+     *
+     * @param ignoreTemp True to bypass minimum activation temperature thresholds (e.g., during forced orbital ignition)
+     * @return True if at least one chemical reaction executed and modified atmospheric masses
      */
-    private void updateChemicalReactions() {
+    private boolean updateChemicalReactions(boolean ignoreTemp) {
         double currentTemp = getSurfaceTemperature();
-
+        boolean hadReaction = false;
         if (hasAtmosphere()) {
             Collection<AtmosphericReaction> allReactions = AtmosphericReaction.getAllReactions();
             if (!allReactions.isEmpty()) {
@@ -284,8 +302,7 @@ public class AtmosphereComposition {
                 double[] reactionTheoreticalCycles = new double[allReactions.size()];
 
                 // PASS 1: Filter eligible reactions and compute theoretical stoichiometric cycles
-                var activeReactions = getEligibleReactions(allReactions, currentTemp, reactionTheoreticalCycles, totalGasDemand);
-
+                var activeReactions = getEligibleReactions(allReactions, currentTemp, ignoreTemp, reactionTheoreticalCycles, totalGasDemand);
                 if (!activeReactions.isEmpty()) {
 
                     // PASS 2: Compute proportional throttling ratios for over-demanded reactants
@@ -294,13 +311,14 @@ public class AtmosphereComposition {
                     startTransaction();
                     try {
                         // PASS 3: Apply throttled stoichiometric conversions via the active transaction
-                        applyReactions(activeReactions, gasThrottleFactors, reactionTheoreticalCycles);
+                        hadReaction = applyReactions(activeReactions, gasThrottleFactors, reactionTheoreticalCycles);
                     } finally {
                         commitTransaction();
                     }
                 }
             }
         }
+        return hadReaction;
     }
 
     /**
@@ -334,8 +352,10 @@ public class AtmosphereComposition {
      * @param activeReactions           The list of eligible chemical reactions scheduled for execution
      * @param gasThrottleFactors        Array indexed by gas ordinal containing proportional scaling factors (0.0 to 1.0)
      * @param reactionTheoreticalCycles Array indexed by reaction ordinal storing unthrottled reaction cycles
+     * @return True if at least one reaction executed with a strictly positive cycle count
      */
-    private void applyReactions(List<AtmosphericReaction> activeReactions, double[] gasThrottleFactors, double[] reactionTheoreticalCycles) {
+    private boolean applyReactions(List<AtmosphericReaction> activeReactions, double[] gasThrottleFactors, double[] reactionTheoreticalCycles) {
+        boolean hadReaction = false;
         for (AtmosphericReaction reaction : activeReactions) {
             double finalThrottle = 1.0;
             for (AtmosphereGasType gas : reaction.reactants().keySet()) {
@@ -343,7 +363,7 @@ public class AtmosphereComposition {
             }
 
             double finalizedCycles = reactionTheoreticalCycles[reaction.ordinal()] * finalThrottle;
-            if (finalizedCycles > 1e-6) {
+            if (finalizedCycles > 0.0) {
                 for (var reactantEntry : reaction.reactants().entrySet()) {
                     AtmosphereGasType gas = reactantEntry.getKey();
                     double massToConsume = finalizedCycles * reactantEntry.getValue() * gas.molecularWeight();
@@ -355,8 +375,10 @@ public class AtmosphereComposition {
                     double massToProduce = finalizedCycles * productEntry.getValue() * gas.molecularWeight();
                     addAtmosphereGas(gas, massToProduce);
                 }
+                hadReaction = true;
             }
         }
+        return hadReaction;
     }
 
     /**
@@ -365,14 +387,16 @@ public class AtmosphereComposition {
      *
      * @param allReactions              The complete collection of configured chemical reactions in the simulation
      * @param currentTemp               Current planetary surface temperature expressed in Kelvin
+     * @param ignoreTemp                True to bypass minimum temperature thresholds during forced ignition
      * @param reactionTheoreticalCycles Output array indexed by reaction ordinal storing maximum allowed cycles per turn
      * @param totalGasDemand            Output array indexed by gas ordinal accumulating total mass demanded across all active reactions (kg)
      * @return A filtered list containing only the chemical reactions eligible to execute during this turn
      */
-    private List<AtmosphericReaction> getEligibleReactions(Collection<AtmosphericReaction> allReactions, double currentTemp, double[] reactionTheoreticalCycles, double[] totalGasDemand) {
+    private List<AtmosphericReaction> getEligibleReactions(Collection<AtmosphericReaction> allReactions, double currentTemp, boolean ignoreTemp, double[] reactionTheoreticalCycles,
+                                                           double[] totalGasDemand) {
         List<AtmosphericReaction> activeReactions = new ArrayList<>();
         for (AtmosphericReaction reaction : allReactions) {
-            if (applicableReaction(reaction, currentTemp)) {
+            if (applicableReaction(reaction, currentTemp, ignoreTemp)) {
 
                 // Find limiting reactant
                 double maxCycles = calculateMaxCycles(reaction);
@@ -381,7 +405,7 @@ public class AtmosphereComposition {
                 }
 
                 double allowedCycles = maxCycles * reaction.reactionRate();
-                if (allowedCycles > 1e-6) {
+                if (allowedCycles > 0.0) {
                     activeReactions.add(reaction);
                     reactionTheoreticalCycles[reaction.ordinal()] = allowedCycles;
 
@@ -428,10 +452,11 @@ public class AtmosphereComposition {
      *
      * @param reaction             The candidate chemical reaction to evaluate
      * @param currentTemp          Current planetary surface temperature in Kelvin
+     * @param ignoreTemp  True to ignore minimum activation temperature requirements
      * @return True if temperature and all reactant partial pressure thresholds are met
      */
-    private boolean applicableReaction(AtmosphericReaction reaction, double currentTemp) {
-        return currentTemp >= reaction.minTemperature() && arePartialPressuresMet(reaction);
+    private boolean applicableReaction(AtmosphericReaction reaction, double currentTemp, boolean ignoreTemp) {
+        return (ignoreTemp || currentTemp >= reaction.minTemperature()) && arePartialPressuresMet(reaction);
     }
 
     /**

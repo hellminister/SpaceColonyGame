@@ -1,16 +1,18 @@
 package ca.dauqui.spacecolonygame.gui.newgame.chooseplanetscreen;
 
+import ca.dauqui.spacecolonygame.gamedata.Colony;
 import ca.dauqui.spacecolonygame.gamedata.ProbeAndSatelliteEffect;
-import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
+import ca.dauqui.spacecolonygame.gamedata.SatelliteType;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.Planet;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarSystem;
+import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.newgame.InfoGrid;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -23,11 +25,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +48,9 @@ public class ChoosePlanetScreen extends VBox {
     private final Set<ProbeAndSatelliteEffect> probeAndSatelliteEffects;
 
     private final HBox planetSpace;
+    private final HBox probeButtons;
+
+    private final IntegerProperty probeButtonActionCount;
 
     /**
      * Constructs the primary planet selection layout, defining proportional resizing limits,
@@ -61,6 +62,7 @@ public class ChoosePlanetScreen extends VBox {
         this.starSystem = new SimpleObjectProperty<>();
         this.selectedPlanet = new SimpleObjectProperty<>();
         probeAndSatelliteEffects = EnumSet.noneOf(ProbeAndSatelliteEffect.class);
+        probeButtonActionCount = new SimpleIntegerProperty(0);
 
         setStyle("-fx-background-color: black;" +
                 "-fx-border-width: 1px;" +
@@ -132,13 +134,85 @@ public class ChoosePlanetScreen extends VBox {
         var buttonPane = new HBox();
 
         buttonPane.setAlignment(Pos.CENTER);
-        buttonPane.getChildren().addAll(nextButton);
+
+        probeButtons = new HBox();
+        probeButtons.setAlignment(Pos.CENTER);
+
+        buttonPane.getChildren().addAll(probeButtons, nextButton);
 
         buttonPane.maxHeightProperty().bind(heightProperty().multiply(BUTTON_BAR_HEIGHT_MULT));
         buttonPane.minHeightProperty().bind(heightProperty().multiply(BUTTON_BAR_HEIGHT_MULT));
         buttonPane.prefHeightProperty().bind(heightProperty().multiply(BUTTON_BAR_HEIGHT_MULT));
 
         getChildren().addAll(planetView, infoGrid, buttonPane);
+    }
+
+    /**
+     * Iterates over available orbital assets maps to generate the active probe launching checklist.
+     *
+     * @param colony Master inventory structure supplying current launch module units balance records
+     */
+    public void generateProbes(Colony colony) {
+        probeButtons.getChildren().clear();
+
+        for (SatelliteType satelliteType : colony.getSatelliteTypesInInventory()){
+            if (ProbeAndSatelliteEffect.containsAnyFromCategory(ProbeAndSatelliteEffect.EffectCategories.ATMOSPHERIC, satelliteType.effects())){
+                Button probe = createProbeButton(colony, satelliteType);
+                probeButtons.getChildren().add(probe);
+            }
+        }
+    }
+
+    /**
+     * Constructs an interactive launch button for a specific orbital probe or satellite type.
+     * Deducts the unit from colony inventory upon activation, executes its planetary intervention effects,
+     * defers UI telemetry refresh via {@link Platform#runLater} until asynchronous atmospheric cycles stabilize,
+     * and disables the control once reserves are depleted.
+     *
+     * @param colony        The active player colony ledger managing satellite inventory balances
+     * @param satelliteType The specific probe or satellite blueprint model represented by this button
+     * @return A styled {@link Button} bound to the localized satellite name and availability state
+     */
+    private Button createProbeButton(Colony colony, SatelliteType satelliteType) {
+        Button probe = new Button();
+        Utility.setButtonStyle(probe);
+        probe.textProperty().bind(satelliteType.localizedProperty());
+        BooleanProperty notEmpty = new SimpleBooleanProperty(true);
+        probe.setOnAction(_ -> {
+            int missing = colony.removeFromSatelliteInventory(satelliteType, 1);
+            if (missing <= 0){
+                executeEffects(satelliteType.effects());
+                Platform.runLater(() -> probeButtonActionCount.set(probeButtonActionCount.get() + 1));
+            }
+            if (colony.getAmountInSatelliteInventory(satelliteType) == 0){
+                notEmpty.set(false);
+            }
+        });
+        probe.disableProperty().bind(Bindings.and(selectedPlanet.isNotNull(), notEmpty).not());
+        return probe;
+    }
+
+    /**
+     * Applies a collection of active orbital probe or satellite intervention effects
+     * directly onto the currently selected target planet.
+     *
+     * @param effects The set of {@link ProbeAndSatelliteEffect} modifiers triggered by the launched asset
+     */
+    private void executeEffects(Set<ProbeAndSatelliteEffect> effects) {
+        if (selectedPlanet.get() == null) {
+            return;
+        }
+
+        for (ProbeAndSatelliteEffect effect : effects){
+            switch (effect){
+                case FORCE_ATMOSPHERIC_REACTIONS->
+                        selectedPlanet.get().getPlanet().atmosphereComposition().forceAtmosphericReactions(5);
+                default -> {
+                    // do nothing for tags not used here
+                }
+            }
+        }
+
     }
 
     /**
@@ -211,29 +285,29 @@ public class ChoosePlanetScreen extends VBox {
         infoGrid.prefHeightProperty().bind(heightProperty().multiply(INFO_GRID_HEIGHT_MULT));
 
 
-        infoGrid.addInfo(0, 0, localizedProperty("ChoosePlanetScreen.TYPE"), selectedPlanet, planet -> planet.getPlanet().type());
+        infoGrid.addInfo(0, 0, localizedProperty("ChoosePlanetScreen.TYPE"), selectedPlanet, planet -> planet.getPlanet().type(), probeButtonActionCount);
         infoGrid.addInfo(1, 0, localizedProperty("ChoosePlanetScreen.DISTANCE"), selectedPlanet,
-                planet -> String.format("%.4f %s",planet.getPlanet().distance(), localizedProperty("ChoosePlanetScreen.DISTANCE_UNIT").get()));
+                planet -> String.format("%.4f %s",planet.getPlanet().distance(), localizedProperty("ChoosePlanetScreen.DISTANCE_UNIT").get()), probeButtonActionCount);
         infoGrid.addInfo(0, 1, localizedProperty("ChoosePlanetScreen.RADIUS"), selectedPlanet,
-                planet -> Utility.formatMetric(planet.getPlanet().radius(), 3, planet.getPlanet().radiusUnit()));
+                planet -> Utility.formatMetric(planet.getPlanet().radius(), 3, planet.getPlanet().radiusUnit()), probeButtonActionCount);
         infoGrid.addInfo(1, 1, localizedProperty("ChoosePlanetScreen.MASS"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MASS ,planet -> String.format("%.3f", planet.getPlanet().mass())));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MASS ,planet -> String.format("%.3f", planet.getPlanet().mass())), probeButtonActionCount);
         infoGrid.addInfo(0, 2, localizedProperty("ChoosePlanetScreen.GRAVITY"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_GRAVITY ,planet -> String.format("%.3f", planet.getPlanet().gravity())));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_GRAVITY ,planet -> String.format("%.3f", planet.getPlanet().gravity())), probeButtonActionCount);
         infoGrid.addInfo(1, 2, localizedProperty("ChoosePlanetScreen.TEMPERATURE"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_TEMPERATURE,
                 planet -> {
                     double tempKelvin = planet.getPlanet().surfaceTemperature();
                     double tempCelsius = tempKelvin - 273.15;
                     return String.format(Locale.getDefault(), "%.1f °C", tempCelsius);
-                }));
+                }), probeButtonActionCount);
         infoGrid.addInfo(0, 3, localizedProperty("ChoosePlanetScreen.ATMOSPHERIC_PRESSURE"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_PRESSURE, planet -> {
                     if (!"PT".equals(planet.getPlanet().type())){
                         return "-";
                     }
                     return Utility.formatMetric(planet.getPlanet().atmosphericPressure(), 3, localizedProperty("ChoosePlanetScreen.PRESSURE_UNIT").get());
-                }));
+                }), probeButtonActionCount);
         var atmosphere = infoGrid.addInfo(1, 3, localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ATMOSPHERE_COMPOSITION, planet ->{
                     AtmosphereComposition atmosphereComposition = planet.getPlanet().atmosphereComposition();
@@ -248,47 +322,55 @@ public class ChoosePlanetScreen extends VBox {
                                     atmosphereComposition.getAtmosphereGasPercentage(gasType).get() * 100.0))
                             .collect(java.util.stream.Collectors.joining(", "));
 
-                }));
+                }), probeButtonActionCount);
         var atmosphereToolTip = new Tooltip();
         atmosphereToolTip.setShowDelay(Duration.millis(50));
         atmosphereToolTip.setHideDelay(Duration.ONE);
         atmosphereToolTip.textProperty().bind(createAtmosphereToolTipText());
         atmosphere.setTooltip(atmosphereToolTip);
         infoGrid.addInfo(0, 4, localizedProperty("ChoosePlanetScreen.TECTONIC_TYPE"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_TECTONIC, planet -> planet.getPlanet().tectonic().toString()));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_TECTONIC, planet -> planet.getPlanet().tectonic().toString()), probeButtonActionCount);
         infoGrid.addInfo(1, 4, localizedProperty("ChoosePlanetScreen.VOLCANISM_LEVEL"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_VOLCANISM,
-                        planet -> Utility.formatMetric(planet.getPlanet().volcanism(), 2, localizedProperty("ChoosePlanetScreen.VOLCANISM_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().volcanism(), 2, localizedProperty("ChoosePlanetScreen.VOLCANISM_UNIT").get())), probeButtonActionCount);
         infoGrid.addInfo(0, 5, localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_STRENGTH"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MAGNETIC_STRENGTH, planet -> String.format("%.2f %s",planet.getPlanet().magneticField(), localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_UNIT").get())));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_MAGNETIC_STRENGTH, planet -> String.format("%.2f %s",planet.getPlanet().magneticField(),
+                        localizedProperty("ChoosePlanetScreen.MAGNETIC_FIELD_UNIT").get())), probeButtonActionCount);
         infoGrid.addInfo(1, 5, localizedProperty("ChoosePlanetScreen.ALBEDO"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ALBEDO, planet -> String.format("%.0f %%",planet.getPlanet().albedo() * 100)));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ALBEDO, planet -> String.format("%.0f %%",planet.getPlanet().albedo() * 100)), probeButtonActionCount);
         infoGrid.addInfo(0, 6, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ORBITAL_PERIOD,
-                        planet -> Utility.formatMetric(planet.getPlanet().orbitalPeriodDays(), 2, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().orbitalPeriodDays(), 2, localizedProperty("ChoosePlanetScreen.ORBITAL_PERIOD_DAYS_UNIT").get())), probeButtonActionCount);
         infoGrid.addInfo(1, 6, localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ROTATION_PERIOD,
-                        planet -> Utility.formatMetric(planet.getPlanet().rotationPeriodHours(), 2, localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS_UNIT").get())));
+                        planet -> Utility.formatMetric(planet.getPlanet().rotationPeriodHours(), 2, localizedProperty("ChoosePlanetScreen.ROTATION_PERIOD_HOURS_UNIT").get())), probeButtonActionCount);
         infoGrid.addInfo(0, 7, localizedProperty("ChoosePlanetScreen.AXIS_TILT"), selectedPlanet,
-                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_AXIS_TILT, planet -> String.format("%.1f°", planet.getPlanet().axisTilt())));
+                new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_AXIS_TILT, planet -> String.format("%.1f°", planet.getPlanet().axisTilt())), probeButtonActionCount);
         infoGrid.addInfo(1, 7, localizedProperty("ChoosePlanetScreen.IS_TIDALLY_LOCKED"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_ROTATION_PERIOD,
-                        planet -> planet.getPlanet().isTidallyLocked() ? localizedProperty("ChoosePlanetScreen.YES").get() : localizedProperty("ChoosePlanetScreen.NO").get()));
+                        planet -> planet.getPlanet().isTidallyLocked() ? localizedProperty("ChoosePlanetScreen.YES").get() : localizedProperty("ChoosePlanetScreen.NO").get()), probeButtonActionCount);
         infoGrid.addInfo(0, 8, localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT"), selectedPlanet,
-                planet -> Utility.formatMetric(planet.getPlanet().receivedLight(), 3, localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT_UNIT").get()));
+                planet -> Utility.formatMetric(planet.getPlanet().receivedLight(), 3, localizedProperty("ChoosePlanetScreen.RECEIVED_LIGHT_UNIT").get()), probeButtonActionCount);
         infoGrid.addInfo(1, 8, localizedProperty("ChoosePlanetScreen.NUMBER_OF_SITES"), selectedPlanet,
                 new PlanetFieldExtraction(ProbeAndSatelliteEffect.SHOW_SITE_COUNT,
-                        planet -> String.format("%d", planet.getPlanet().numberOfSites())));
+                        planet -> String.format("%d", planet.getPlanet().numberOfSites())), probeButtonActionCount);
 
         infoGrid.setAlignment(Pos.CENTER);
 
         return infoGrid;
     }
 
+    /**
+     * Constructs a reactive {@link StringBinding} compiling a detailed breakdown of the selected planet's
+     * atmospheric composition, volatile ignition hazards, and condensed surface reserves for tooltip display.
+     * Masks telemetry data if orbital scanning prerequisites are unmet and updates dynamically upon probe deployment.
+     *
+     * @return A lazily evaluated {@link StringBinding} formatting the multisection atmospheric tooltip text
+     */
     private StringBinding createAtmosphereToolTipText() {
         return new StringBinding() {
             {
-                bind(localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet);
+                bind(localizedProperty("ChoosePlanetScreen.ATMOSPHERE_COMPOSITION"), selectedPlanet, probeButtonActionCount);
             }
 
             @Override
@@ -341,6 +423,7 @@ public class ChoosePlanetScreen extends VBox {
         planets.clear();
         planetSpace.getChildren().clear();
         probeAndSatelliteEffects.clear();
+        probeButtons.getChildren().clear();
     }
 
     /**

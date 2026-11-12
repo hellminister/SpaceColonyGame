@@ -300,6 +300,7 @@ public class NewGameScene extends Scene {
             choosePlanet.setSystem(selected);
             choosePlanet.setActiveProbeAndSatelliteEffects(shipTakeOff.getActiveProbeAndSatelliteEffects());
             mainWindow.getColony().setStarSystem(selected);
+            choosePlanet.generateProbes(mainWindow.getColony());
         });
     }
 

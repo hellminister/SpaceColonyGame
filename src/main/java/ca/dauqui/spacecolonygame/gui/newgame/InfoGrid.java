@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gui.newgame;
 
 import ca.dauqui.spacecolonygame.gui.common.Utility;
+import javafx.beans.Observable;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.binding.StringExpression;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -43,10 +44,12 @@ public class InfoGrid<T> extends GridPane {
      * @param readOnlyStringProperty   Prefix data text label description block
      * @param selection                Observable pointer tracking currently highlighted structural records
      * @param getSpectralType          Functional delegate layer mapping string property conversions
+     * @param toObserve                Additional observable dependencies triggering string re-evaluation when invalidated
      * @return Fully operational bound text label Node component
      */
-    public Label addInfo(int col, int row, ReadOnlyStringProperty readOnlyStringProperty, ReadOnlyObjectProperty<T> selection, ExtractFieldString<T> getSpectralType) {
-        return addInfo(col, row, new InfoBinding<>(readOnlyStringProperty, selection, getSpectralType));
+    public Label addInfo(int col, int row, ReadOnlyStringProperty readOnlyStringProperty, ReadOnlyObjectProperty<T> selection, ExtractFieldString<T> getSpectralType,
+                         Observable... toObserve) {
+        return addInfo(col, row, new InfoBinding<>(readOnlyStringProperty, selection, getSpectralType, toObserve));
     }
 
     /**
@@ -92,12 +95,14 @@ public class InfoGrid<T> extends GridPane {
          * @param infoLabel Underlying persistent label prefix description identifier
          * @param star      The reactive target record observation property node
          * @param extractor Functional callback mapping telemetry data calculations
+         * @param toObserve Additional observable dependencies monitored for invalidation triggers
          */
-        InfoBinding(ReadOnlyStringProperty infoLabel, ReadOnlyObjectProperty<T> star, ExtractFieldString<T> extractor) {
+        InfoBinding(ReadOnlyStringProperty infoLabel, ReadOnlyObjectProperty<T> star, ExtractFieldString<T> extractor, Observable... toObserve) {
             this.infoLabel = infoLabel;
             this.star = star;
             this.extractor = extractor;
             bind(infoLabel, star);
+            bind(toObserve);
         }
 
         @Override

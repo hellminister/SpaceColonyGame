@@ -319,20 +319,34 @@ public class ShipLaunchScreen extends StackPane {
         probeLaunch.getChildren().clear();
 
         for (SatelliteType satelliteType : colony.getSatelliteTypesInInventory()){
-            if (ProbeAndSatelliteEffect.containsPlanetaryEffect(satelliteType.effects())){
-                ButtonLine probe = new ButtonLine(satelliteType.localizedProperty());
-                probe.setButtonAction(_ -> {
-                    int missing = colony.removeFromSatelliteInventory(satelliteType, 1);
-                    if (missing <= 0){
-                        activatedEffects.addAll(satelliteType.effects());
-                    }
-                    if (colony.getAmountInSatelliteInventory(satelliteType) == 0){
-                        probe.disableButton(true);
-                    }
-                });
+            if (ProbeAndSatelliteEffect.containsAnyFromCategory(ProbeAndSatelliteEffect.EffectCategories.PLANETARY, satelliteType.effects())){
+                ButtonLine probe = createProbeButton(colony, satelliteType);
                 probeLaunch.getChildren().add(probe);
             }
         }
+    }
+
+    /**
+     * Constructs an interactive launch control line item for a specific orbital satellite or probe type.
+     * Wires inventory deduction actions, applies unlocked telemetry or intervention effects upon successful launch,
+     * and automatically disables the control when stock reserves are depleted.
+     *
+     * @param colony        The active player colony ledger managing satellite inventory balances
+     * @param satelliteType The specific probe or satellite blueprint model represented by this control
+     * @return A configured {@link ButtonLine} component bound to the localized satellite name and launch logic
+     */
+    private ButtonLine createProbeButton(Colony colony, SatelliteType satelliteType) {
+        ButtonLine probe = new ButtonLine(satelliteType.localizedProperty());
+        probe.setButtonAction(_ -> {
+            int missing = colony.removeFromSatelliteInventory(satelliteType, 1);
+            if (missing <= 0){
+                activatedEffects.addAll(satelliteType.effects());
+            }
+            if (colony.getAmountInSatelliteInventory(satelliteType) == 0){
+                probe.disableButton(true);
+            }
+        });
+        return probe;
     }
 
     /**

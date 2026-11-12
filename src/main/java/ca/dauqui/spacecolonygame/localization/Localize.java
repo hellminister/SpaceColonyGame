@@ -23,6 +23,7 @@ public final class Localize {
     private static final String CLASSPATH_SEPARATOR = "/";
 
     private static final Map<String, Map<String, StringProperty>> localizedStrings = new HashMap<>();
+    private static final Map<String, Properties> cachedBundles = new HashMap<>();
     public static final String PROPERTIES_FILE_EXTENSION = ".properties";
 
     static {
@@ -38,6 +39,7 @@ public final class Localize {
      */
     public static void updateLanguage(String languageCode) {
         Locale.setDefault(Locale.forLanguageTag(languageCode));
+        cachedBundles.clear();
 
         for (Map.Entry<String, Map<String, StringProperty>> bundleEntry : localizedStrings.entrySet()) {
             String bundleName = bundleEntry.getKey();
@@ -63,7 +65,7 @@ public final class Localize {
         Map<String, StringProperty> fileMap = localizedStrings.computeIfAbsent(bundleName, _ -> new HashMap<>());
 
         return fileMap.computeIfAbsent(key, k -> {
-            Properties bundle = loadCascadingBundle(bundleName, Locale.getDefault());
+            Properties bundle = cachedBundles.computeIfAbsent(bundleName, b -> loadCascadingBundle(b, Locale.getDefault()));
             String initialValue = bundle.containsKey(k) ? bundle.getProperty(k) : k + " not defined";
             return new SimpleStringProperty(initialValue);
         });

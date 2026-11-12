@@ -102,9 +102,7 @@ class PhaseReservoir {
         if (!Double.isFinite(amount) || amount < 0.0) {
             throw new IllegalArgumentException("Invalid gas mass (must be finite and >= 0): " + amount);
         }
-        if (amount < 0.0) {
-            throw new IllegalArgumentException("Cannot add a negative gas mass: " + amount);
-        }
+
         if (amount == 0.0) {
             return;
         }
@@ -133,9 +131,7 @@ class PhaseReservoir {
         if (!Double.isFinite(amount) || amount < 0.0) {
             throw new IllegalArgumentException("Invalid gas mass (must be finite and >= 0): " + amount);
         }
-        if (amount < 0.0) {
-            throw new IllegalArgumentException("Cannot remove a negative gas mass: " + amount);
-        }
+
         if (amount == 0.0) {
             return 0.0;
         }
@@ -232,7 +228,6 @@ class PhaseReservoir {
 
         suppressInvalidation = true;
         boolean hasChanged = false;
-
         try {
             for (int i = 0; i < gases.length; i++) {
                 double delta = pendingDeltas[i];

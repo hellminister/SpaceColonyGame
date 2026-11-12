@@ -73,7 +73,7 @@ public record AtmosphereGasType(
                         double minTemp = Double.parseDouble(props.getProperty(prefix + ".minTemp", "0.0"));
                         double maxTemp = Double.parseDouble(props.getProperty(prefix + ".maxTemp", "9999.0"));
                         boolean isGiant = Boolean.parseBoolean(props.getProperty(prefix + ".isGasGiantNative", "false"));
-                        double molecularWeight2 = Double.parseDouble(props.getProperty(prefix + ".molecularWeight ", "0.0"));
+                        double molecularWeight2 = Double.parseDouble(props.getProperty(prefix + ".molecularWeight", "0.0"));
                         double antA = Double.parseDouble(props.getProperty(prefix + ".antoineA", "4.0"));
                         double antB = Double.parseDouble(props.getProperty(prefix + ".antoineB", "500.0"));
                         double antC = Double.parseDouble(props.getProperty(prefix + ".antoineC", "0.0"));
