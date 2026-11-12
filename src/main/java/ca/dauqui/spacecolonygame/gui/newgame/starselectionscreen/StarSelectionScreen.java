@@ -6,6 +6,7 @@ import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.mainwindow.MainWindow;
 import ca.dauqui.spacecolonygame.gui.newgame.InfoGrid;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.property.BooleanProperty;
@@ -33,9 +34,8 @@ import java.util.Map;
  * @author Jean-François Quintal
  */
 public class StarSelectionScreen extends GridPane {
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
-    private static final int MAX_SELECTED_STARS = 4;
+    private static final int MAX_SELECTED_STARS = GameParameters.IntParam.MAX_INITIAL_PROBES.get();
 
     private final BooleanProperty preselection;
     private final Map<StarSystemAsset, StarSystem> probedSystems;
@@ -56,7 +56,7 @@ public class StarSelectionScreen extends GridPane {
         setStyle("-fx-background-color: black;" +
                 "-fx-border-width: 1px;" +
                 "-fx-border-color: lime");
-        setGridLinesVisible(true);
+        setGridLinesVisible(GameParameters.BooleanParam.DEBUG_SHOW_GRID_LINES.get());
         var colConst1 = new ColumnConstraints();
         colConst1.setPercentWidth(50);
         var colConst2 = new ColumnConstraints();
@@ -147,10 +147,10 @@ public class StarSelectionScreen extends GridPane {
                 star -> String.format("%.4f", star.distance()));
 
         starInfosGrid.addInfo(1, 1, localizedProperty("StarSelectionScreen.MAIN_SHIP_TRAVEL_LABEL"), stars.getSelection(),
-                star -> String.format("%.2f", star.distance()/0.30));
+                star -> String.format("%.2f", star.distance()/GameParameters.DoubleParam.SEED_SHIP_SPEED_C.get()));
 
         starInfosGrid.addInfo(0, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRAVEL_LABEL"), stars.getSelection(),
-                star -> String.format("%.2f", star.distance()/0.005));
+                star -> String.format("%.2f", star.distance()/GameParameters.DoubleParam.HUMANITY_SHIP_SPEED_C.get()));
 
         starInfosGrid.addInfo(1, 2, localizedProperty("StarSelectionScreen.HUMANITY_TRANSIT_SURVIVAL_LABEL"), stars.getSelection(),
                 star -> String.format("%.4f %%", (1/((star.distance()-40)*0.00061) + 110)));
@@ -287,7 +287,7 @@ public class StarSelectionScreen extends GridPane {
      * @return Localized text expression binding node
      */
     public static ReadOnlyStringProperty localizedProperty(String name) {
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), name);
     }
 
     /**

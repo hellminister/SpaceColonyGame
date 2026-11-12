@@ -2,6 +2,7 @@ package ca.dauqui.spacecolonygame.gui.newgame.starselectionscreen;
 
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Pos;
@@ -29,7 +30,6 @@ import java.util.List;
 class StarField extends BorderPane {
     // 5 degrees converted to standard rotation degrees for native JavaFX Rotate blocks
     private static final double ANGLE_CHANGE_DEGREES = 5.0;
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
     /**
      * Constructs the 3D projection viewport frame, populating the local cluster sphere models,
@@ -174,6 +174,6 @@ class StarField extends BorderPane {
      * @return Localized text expression binding node
      */
     public static ReadOnlyStringProperty localizedProperty(String name) {
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), name);
     }
 }

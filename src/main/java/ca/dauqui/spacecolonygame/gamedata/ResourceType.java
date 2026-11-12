@@ -4,6 +4,7 @@ import ca.dauqui.spacecolonygame.gamedata.tiledata.TerrainType;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.MathFunction;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * This record encapsulates the data structures, multifactorial mathematical curves, and geological
  * parameters required to procedurally distribute raw deposits across colonial site grids.
  * <p>
- * Sourced dynamically from external files to allow comprehensive modder configuration overrides,
+ * Sourced dynamically from external files to allow comprehensive modifier configuration overrides,
  * mirroring advanced hard-science space simulation layouts.
  * </p>
  *
@@ -35,16 +36,12 @@ public record ResourceType(
         GenerationParameters parameters,
         ReadOnlyStringProperty name
 ) implements Localizable, EnumLike {
-    // Path configuration identifying the core resource data matrix file
-    private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/resourceType.properties";
-    // Path configuration identifying the core resource localization file
-    private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
     /**
      * Decentralized registry map capturing all parsed resource configurations at application boot.
      * Implements a qualitative cascading strategy mapping tokens to matching record instances.
      */
-    private static final TypesafeConstants<ResourceType> tags = new TypesafeConstants<>(CONFIG_PATH) {
+    private static final TypesafeConstants<ResourceType> tags = new TypesafeConstants<>(GameParameters.StringParam.RESOURCE_TYPE_DATA_PATH.get()) {
         @Override
         protected void parseProperties(Properties props, Map<String, ResourceType> targetMap) {
             Set<String> processedPrefixes = new HashSet<>();
@@ -97,7 +94,7 @@ public record ResourceType(
         double baseMinAmount = baseMinAmountSt != null ? Double.parseDouble(baseMinAmountSt.trim()) : 500;
 
         String baseMaxAmountSt = props.getProperty(prefix + ".baseMaxAmount");
-        double baseMaxAmount = baseMinAmountSt != null ? Double.parseDouble(baseMaxAmountSt.trim()) : 500;
+        double baseMaxAmount = baseMaxAmountSt != null ? Double.parseDouble(baseMaxAmountSt.trim()) : 500;
 
 
         // Dynamically builds the multifactorial planetary influence matrix map
@@ -183,7 +180,7 @@ public record ResourceType(
      * @param parameters The compiled structural generation models assigned to this resource type
      */
     private ResourceType(int ordinal, String id, GenerationParameters parameters) {
-        this(ordinal, id, parameters, Localize.getProperty(ENUMS_BUNDLE, "ResourceType." + id));
+        this(ordinal, id, parameters, Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "ResourceType." + id));
     }
 
     /**

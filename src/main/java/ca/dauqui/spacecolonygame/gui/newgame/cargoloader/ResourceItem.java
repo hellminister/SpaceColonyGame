@@ -2,6 +2,7 @@ package ca.dauqui.spacecolonygame.gui.newgame.cargoloader;
 
 import ca.dauqui.spacecolonygame.gamedata.ResourceType;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -41,7 +42,7 @@ record ResourceItem(
      */
     public ResourceItem(ResourceType resourceType, int weight, int cost, int startingCount, int quantityPerUnit) {
         this(weight, cost, startingCount, new SimpleIntegerProperty(startingCount), resourceType, quantityPerUnit,
-                Localize.getProperty("ca.dauqui.spacecolonygame.localization.enums", "ResourceType." + resourceType.id() + ".desc"));
+                Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "ResourceType." + resourceType.id() + ".desc"));
     }
 
     @Override

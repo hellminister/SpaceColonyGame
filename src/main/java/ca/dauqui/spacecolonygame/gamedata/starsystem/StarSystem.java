@@ -1,5 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
+import ca.dauqui.spacecolonygame.util.GameRandom;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -15,7 +17,7 @@ import java.util.Random;
 public class StarSystem {
     private final StarSystemAsset staticInfo;
     private final List<Planet> planets;
-    private static final Random random = new Random();
+    private static final Random random = GameRandom.RANDOM;
 
     /**
      * Constructs a live star system simulation node, unpacking core embedded planet presets

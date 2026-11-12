@@ -1,5 +1,6 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere;
 
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 
@@ -21,7 +22,7 @@ import java.util.logging.Logger;
  *
  * @author Jean-François Quintal
  */
-public record AtmosphericReaction(
+record AtmosphericReaction(
         int ordinal,
         String id,
         Map<AtmosphereGasType, Integer> reactants,
@@ -30,11 +31,9 @@ public record AtmosphericReaction(
         Map<AtmosphereGasType, Double> minPartialPressures,
         double reactionRate
 ) implements EnumLike {
-
     private static final Logger LOG = Logger.getLogger(AtmosphericReaction.class.getName());
-    private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/reactions.properties";
 
-    private static final TypesafeConstants<AtmosphericReaction> REACTIONS = new TypesafeConstants<>(CONFIG_PATH) {
+    private static final TypesafeConstants<AtmosphericReaction> REACTIONS = new TypesafeConstants<>(GameParameters.StringParam.REACTIONS_DATA_PATH.get()) {
         @Override
         protected void parseProperties(Properties props, Map<String, AtmosphericReaction> targetMap) {
             Set<String> processedPrefixes = new HashSet<>();

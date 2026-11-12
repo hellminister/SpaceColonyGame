@@ -3,6 +3,7 @@ package ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -51,10 +52,7 @@ public record AtmosphereGasType(
         double antoineC,
         ReadOnlyStringProperty name
 ) implements Localizable, EnumLike {
-    private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/atmospheres.properties";
-    private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
-
-    private static final TypesafeConstants<AtmosphereGasType> GAS_LIST = new TypesafeConstants<>(CONFIG_PATH) {
+    private static final TypesafeConstants<AtmosphereGasType> GAS_LIST = new TypesafeConstants<>(GameParameters.StringParam.ATMOSPHERES_DATA_PATH.get()) {
 
         public static final String HELIUM = "HELIUM";
         public static final String HYDROGEN = "HYDROGEN";
@@ -100,7 +98,7 @@ public record AtmosphereGasType(
 
     /**
      * Calculates the saturation vapour pressure for this gas at a specific temperature using Antoine's equation.
-     * Evaluates log10(Psat) = A - (B / (T + C)) returning pressure constraints mapped onto active bars.
+     * Evaluates log10(P_sat) = A - (B / (T + C)) returning pressure constraints mapped onto active bars.
      *
      * @param temperatureKelvin The current ambient surface temperature expressed in Kelvin units
      * @return Computed saturation vapour partial pressure threshold scalar limits in Bars
@@ -153,7 +151,7 @@ public record AtmosphereGasType(
     private AtmosphereGasType(int ordinal, String id, double greenhouseFactor, double toxicity, double corrosiveness,
                               double minTemp, double maxTemp, boolean isGasGiantNative, double molecularWeight, double antoineA, double antoineB, double antoineC) {
         this(ordinal, id, greenhouseFactor, toxicity, corrosiveness, minTemp, maxTemp, isGasGiantNative, molecularWeight, antoineA, antoineB, antoineC,
-                Localize.getProperty(ENUMS_BUNDLE, "AtmosphereGasType." + id));
+                Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "AtmosphereGasType." + id));
     }
 
     /**

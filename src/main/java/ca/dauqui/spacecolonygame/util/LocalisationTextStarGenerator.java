@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.util;
 
 import ca.dauqui.spacecolonygame.gamedata.starsystem.StarDataColumn;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,11 +20,6 @@ import java.util.logging.StreamHandler;
  */
 public class LocalisationTextStarGenerator {
     private static final Logger LOG = Logger.getLogger(LocalisationTextStarGenerator.class.getName());
-
-    private static final String STAR_LOCALISATION_PATH = "src/main/resources/ca/dauqui/spacecolonygame/localization/data/";
-    private static final String STAR_DATA_PATH = "src/main/resources/ca/dauqui/spacecolonygame/data/starsystems/";
-    private static final  double MAX_DISTANCE = 25.0;
-
 
     static void main() {
         for (java.util.logging.Handler handler : LOG.getHandlers()) {
@@ -44,9 +40,10 @@ public class LocalisationTextStarGenerator {
 
 
 
-        Path path = new File(STAR_DATA_PATH + "StarData.txt").toPath();
+        Path path = new File("src/main/resources" + GameParameters.StringParam.STAR_DATA_PATH.get()).toPath();
         try {
-            Path file = Files.createFile(new File(STAR_LOCALISATION_PATH + "star_data_en.properties").toPath());
+            String bundlePath = GameParameters.StringParam.LOCALIZATION_STAR_DATA_BUNDLE.get().replace('.', '/');
+            Path file = Files.createFile(new File("src/main/resources/" + bundlePath + "_en.properties").toPath());
 
             createFile(path, file);
         } catch (FileAlreadyExistsException _) {
@@ -66,7 +63,7 @@ public class LocalisationTextStarGenerator {
                 if (!line.isBlank() && !line.startsWith("#")) {
                     String[] text = line.split(",");
 
-                    if (Double.parseDouble(text[StarDataColumn.DIST.ordinal()]) > MAX_DISTANCE){
+                    if (Double.parseDouble(text[StarDataColumn.DIST.ordinal()]) > GameParameters.DoubleParam.MAX_STAR_DISTANCE_LY.get()){
                         break;
                     }
 

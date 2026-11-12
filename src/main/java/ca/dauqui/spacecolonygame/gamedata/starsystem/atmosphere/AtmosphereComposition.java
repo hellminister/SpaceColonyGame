@@ -1,5 +1,6 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere;
 
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
@@ -82,7 +83,7 @@ public class AtmosphereComposition {
 
                 // If the world is tidally locked, apply the permanent background radiation cooling offset natively
                 if (isTidallyLocked) {
-                    computedTemp -= 15.0;
+                    computedTemp -= GameParameters.DoubleParam.TIDALLY_LOCKED_COOLING_OFFSET.get();
                 }
 
                 return computedTemp;
@@ -127,14 +128,14 @@ public class AtmosphereComposition {
      * @return The toxicity level of the atmosphere (0.0 to 1.0) where 1.0 is most toxic
      */
     public double getToxicity() {
-        return toxicity.get();
+        return toxicityProperty().get();
     }
 
     /**
      * @return The toxicity level of the atmosphere as a binding (0.0 to 1.0) where 1.0 is most toxic
      */
     public DoubleBinding toxicityProperty() {
-        return toxicityProperty();
+        return toxicity;
     }
 
     /**
@@ -425,7 +426,7 @@ public class AtmosphereComposition {
      * Enforces an upper finite safety cap to prevent floating-point overflow on massive worlds.
      *
      * @param reaction The chemical reaction to evaluate
-     * @return The maximum allowable reaction cycles capped at 1e30, or 0.0 if a reactant is depleted
+     * @return The maximum allowable reaction cycles capped at 1e30 (from GameParameters), or 0.0 if a reactant is depleted
      */
     private double calculateMaxCycles(AtmosphericReaction reaction) {
         double maxCycles = Double.MAX_VALUE;
@@ -443,7 +444,7 @@ public class AtmosphereComposition {
             }
         }
 
-        return Math.min(maxCycles, 1e30);
+        return Math.min(maxCycles, GameParameters.DoubleParam.MAX_REACTION_CYCLES_CAP.get());
     }
 
     /**

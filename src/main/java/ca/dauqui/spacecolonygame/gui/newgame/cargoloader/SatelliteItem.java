@@ -2,6 +2,7 @@ package ca.dauqui.spacecolonygame.gui.newgame.cargoloader;
 
 import ca.dauqui.spacecolonygame.gamedata.SatelliteType;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -38,7 +39,7 @@ record SatelliteItem(
      */
     public SatelliteItem(SatelliteType satelliteType, int weight, int cost, int startingCount) {
         this(weight, cost, startingCount, new SimpleIntegerProperty(startingCount), satelliteType,
-                Localize.getProperty("ca.dauqui.spacecolonygame.localization.enums", "SatelliteType." + satelliteType.id() + ".desc"));
+                Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "SatelliteType." + satelliteType.id() + ".desc"));
     }
 
     @Override

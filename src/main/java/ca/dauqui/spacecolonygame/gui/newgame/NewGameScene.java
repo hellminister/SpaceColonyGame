@@ -9,6 +9,7 @@ import ca.dauqui.spacecolonygame.gui.newgame.cargoloader.ShipCargoLoader;
 import ca.dauqui.spacecolonygame.gui.newgame.chooseplanetscreen.ChoosePlanetScreen;
 import ca.dauqui.spacecolonygame.gui.newgame.starselectionscreen.StarSelectionScreen;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -26,8 +27,6 @@ import javafx.scene.layout.*;
  * @author Jean-François Quintal
  */
 public class NewGameScene extends Scene {
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
-
 
     private final MainWindow mainWindow;
 
@@ -368,7 +367,7 @@ public class NewGameScene extends Scene {
      * @return Localized text expression binding node
      */
     public static ReadOnlyStringProperty localizedProperty(String name) {
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), name);
     }
 
     /**

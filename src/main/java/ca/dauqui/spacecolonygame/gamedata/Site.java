@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata;
 
 import ca.dauqui.spacecolonygame.gamedata.tiledata.TileData;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +18,8 @@ import java.util.Map;
  * @author Jean-François Quintal
  */
 public class Site {
-    public static final int MAP_HEIGHT = 150;
-    public static final int MAP_WIDTH = 300;
+    public static final int MAP_HEIGHT = GameParameters.IntParam.SITE_MAP_HEIGHT.get();
+    public static final int MAP_WIDTH = GameParameters.IntParam.SITE_MAP_WIDTH.get();
 
     public final int mapDepth; // 0 for the surface and 1-4 for underground
 
@@ -43,7 +44,7 @@ public class Site {
     }
 
     /**
-     * @return Raw transactional multi-dimensional primitive array storing structural tile index signatures
+     * @return Raw transactional multidimensional primitive array storing structural tile index signatures
      */
     public int[][][] getTileData() {
         return siteArea;

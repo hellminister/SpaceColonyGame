@@ -2,6 +2,8 @@ package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
 import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereComposition;
 import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereGasType;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
+import ca.dauqui.spacecolonygame.util.GameRandom;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +16,7 @@ import java.util.Random;
  * use 1 instance of this per star system to populate
  */
 public final class PlanetGenerator {
-    private static final Random RAND = new Random();
+    private static final Random RAND = GameRandom.RANDOM;
 
     /**
      * an empty default planets for when no planet exists in the data
@@ -234,7 +236,7 @@ public final class PlanetGenerator {
             // Generate the atmosphere for a gas giant
             if (!"PT".equals(type)) {
                 generateGasGiantAtmosphere(composition);
-            } else if (gravity > 0.20 && tempEquilibrium < 500) {
+            } else if (gravity > GameParameters.DoubleParam.MIN_TELLURIC_ATMO_GRAVITY.get() && tempEquilibrium < GameParameters.DoubleParam.MAX_TELLURIC_ATMO_TEMP.get()) {
                 generateTelluricPlanetAtmosphere(composition, gravity, radius, radiusUnit, tempEquilibrium, volcanism);
             }
         } finally {
@@ -435,7 +437,7 @@ public final class PlanetGenerator {
         }
 
         // 7. minimum of 1 site and maximum of 20 site on a rocky planet
-        return Math.clamp(sites, 1, 20);
+        return Math.clamp(sites, GameParameters.IntParam.MIN_PLANET_SITES.get(), GameParameters.IntParam.MAX_PLANET_SITES.get());
     }
 
     /**

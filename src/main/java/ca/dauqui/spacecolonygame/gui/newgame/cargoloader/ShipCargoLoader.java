@@ -3,6 +3,7 @@ package ca.dauqui.spacecolonygame.gui.newgame.cargoloader;
 import ca.dauqui.spacecolonygame.gamedata.Colony;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.IntegerBinding;
 import javafx.beans.binding.StringExpression;
@@ -26,7 +27,6 @@ import java.util.List;
  */
 public class ShipCargoLoader extends VBox {
 
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
     private static final String SPINNER_CSS = ShipCargoLoader.class.getResource("spinner.css").toExternalForm();
     private final List<CargoItem> cargoItems;
     private final IntegerBinding remainingWeight;
@@ -280,6 +280,6 @@ public class ShipCargoLoader extends VBox {
      * Fetches reactive localized resource bundle properties assigned to tracking string keys.
      */
     private static ReadOnlyStringProperty localizedProperty(String name) {
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), name);
     }
 }

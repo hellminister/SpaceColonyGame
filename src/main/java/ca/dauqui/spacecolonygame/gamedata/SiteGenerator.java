@@ -5,6 +5,7 @@ import ca.dauqui.spacecolonygame.gamedata.starsystem.TectonicType;
 import ca.dauqui.spacecolonygame.gamedata.tiledata.Terrain;
 import ca.dauqui.spacecolonygame.gamedata.tiledata.TerrainType;
 import ca.dauqui.spacecolonygame.gamedata.tiledata.TileData;
+import ca.dauqui.spacecolonygame.util.GameRandom;
 
 import java.util.*;
 
@@ -16,8 +17,7 @@ import java.util.*;
  * @author Jean-François Quintal
  */
 public final class SiteGenerator {
-    private static final Random random = new Random();
-    private static final int MAX_SURFACE_SITES = 5;
+    private static final Random random = GameRandom.RANDOM;
 
     private static final int IMPASSABLE = -1;
     private static final int HARD = -2;
@@ -87,13 +87,13 @@ public final class SiteGenerator {
      * @param planet Core planetary specifications tracking target destination environment variables
      * @return Unmodifiable list collection holding fully generated independent Site layout entries
      */
-    public static List<Site> generateSurfaceSites(Planet planet) {
+    public static List<Site> generateSurfaceSites(Planet planet, int numSitesToGenerate) {
         List<Site> surfaceSites = new ArrayList<>();
         int calculatedDepth = calculateExplorableDepth(planet);
 
         double heatFlux = planet.volcanism();
 
-        for (int i = 0; i < MAX_SURFACE_SITES; i++) {
+        for (int i = 0; i < numSitesToGenerate; i++) {
             Site site = new Site(calculatedDepth, tileDataGeneric);
             int[][][] data = site.getTileData();
 

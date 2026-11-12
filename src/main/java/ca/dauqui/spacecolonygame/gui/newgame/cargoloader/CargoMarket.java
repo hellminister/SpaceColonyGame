@@ -3,6 +3,7 @@ package ca.dauqui.spacecolonygame.gui.newgame.cargoloader;
 import ca.dauqui.spacecolonygame.gamedata.ResourceType;
 import ca.dauqui.spacecolonygame.gamedata.SatelliteType;
 import ca.dauqui.spacecolonygame.gamedata.tiledata.Building;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.ModdablePropertiesLoader;
 
 
@@ -31,8 +32,7 @@ final class CargoMarket {
         /* This utility class should not be instantiated */
     }
 
-    private static final String MARKET_PATH = "/ca/dauqui/spacecolonygame/data/cargoMarket.properties";
-    private static final Properties marketProps = ModdablePropertiesLoader.load(MARKET_PATH);
+    private static final Properties marketProps = ModdablePropertiesLoader.load(GameParameters.StringParam.CARGO_MARKET_DATA_PATH.get());
 
     private static List<ResourceItem> resourceItems = null;
     private static List<SatelliteItem> satelliteItems = null;

@@ -1,6 +1,7 @@
 package ca.dauqui.spacecolonygame.gamedata.starsystem;
 
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -34,10 +35,8 @@ public record StarSystemAsset(
         List<PlanetAsset> planetAssets
 ) implements EnumLike {
     private static final Logger LOG = Logger.getLogger(StarSystemAsset.class.getName());
-    private static final String STAR_DATA_PATH = "/ca/dauqui/spacecolonygame/data/starsystems/StarData.txt";
-    private static final String STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.data.star_data";
 
-    private static final StarSystemAssetConstants STAR_SYSTEMS = new StarSystemAssetConstants(STAR_DATA_PATH);
+    private static final StarSystemAssetConstants STAR_SYSTEMS = new StarSystemAssetConstants(GameParameters.StringParam.STAR_DATA_PATH.get());
 
     /**
      * Gives the StarSystemAsset corresponding to the given id
@@ -78,8 +77,8 @@ public record StarSystemAsset(
                         Double.parseDouble(dataStr[StarDataColumn.Y.ordinal()].trim()),
                         Double.parseDouble(dataStr[StarDataColumn.Z.ordinal()].trim())
                 ),
-                Localize.getProperty(STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH, dataStr[StarDataColumn.NAME.ordinal()].trim() + ".NAME"),
-                Localize.getProperty(STAR_SYSTEM_ASSET_LOCALIZE_BUNDLE_PATH, dataStr[StarDataColumn.NAME.ordinal()].trim() + ".DESCRIPTION"),
+                Localize.getProperty(GameParameters.StringParam.LOCALIZATION_STAR_DATA_BUNDLE.get(), dataStr[StarDataColumn.NAME.ordinal()].trim() + ".NAME"),
+                Localize.getProperty(GameParameters.StringParam.LOCALIZATION_STAR_DATA_BUNDLE.get(), dataStr[StarDataColumn.NAME.ordinal()].trim() + ".DESCRIPTION"),
                 new ArrayList<>() // Initialized as a mutable list array to allow structural addPlanetAsset calls
         );
     }
@@ -192,7 +191,6 @@ public record StarSystemAsset(
      * A TypesafeConstant implementation that also keeps a list of the star systems in distance order
      */
     private static class StarSystemAssetConstants extends TypesafeConstants<StarSystemAsset> {
-        private static final double MAX_DISTANCE = 25.0;
         private final List<StarSystemAsset> sortedStarSystemAssets;
 
         /**
@@ -242,7 +240,7 @@ public record StarSystemAsset(
 
             StarSystemAsset last = null;
             for (String[] text : rawRows) {
-                if (Double.parseDouble(text[StarDataColumn.DIST.ordinal()].trim()) > MAX_DISTANCE) {
+                if (Double.parseDouble(text[StarDataColumn.DIST.ordinal()].trim()) > GameParameters.DoubleParam.MAX_STAR_DISTANCE_LY.get()) {
                     break;
                 }
                 last = treatStellarBody(text, last, targetMap);

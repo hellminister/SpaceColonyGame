@@ -5,11 +5,12 @@ import ca.dauqui.spacecolonygame.gamedata.ProbeAndSatelliteEffect;
 import ca.dauqui.spacecolonygame.gamedata.SatelliteType;
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
+import ca.dauqui.spacecolonygame.settings.GameSettings;
 import ca.dauqui.spacecolonygame.util.VideoLibrary;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -39,7 +40,6 @@ import java.util.logging.Logger;
  */
 public class ShipLaunchScreen extends StackPane {
     private static final Logger LOG = Logger.getLogger(ShipLaunchScreen.class.getName());
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
     private static final double ESTIMATE_BUTTON_LINE_HEIGHT = 36.0;
 
     private final Set<ProbeAndSatelliteEffect> activatedEffects;
@@ -47,7 +47,7 @@ public class ShipLaunchScreen extends StackPane {
     private MediaPlayer currentMediaPlayer;
     private final VBox launcher;
     private final VBox shipLaunch;
-    private final BooleanProperty doShipLaunch;
+    private final ReadOnlyBooleanProperty doShipLaunch;
     private final VBox probeLaunch;
 
     private final ButtonLine next;
@@ -75,9 +75,10 @@ public class ShipLaunchScreen extends StackPane {
         mediaView.fitHeightProperty().bind(this.heightProperty());
         mediaView.setVisible(false);
         this.getChildren().add(mediaView);
-        doShipLaunch = new SimpleBooleanProperty(true);
+        doShipLaunch = GameSettings.BooleanSetting.ENABLE_PREFLIGHT_CHECKLIST.readOnlyProperty();
         shipLaunch = new VBox();
         shipLaunch.visibleProperty().bind(doShipLaunch);
+        shipLaunch.managedProperty().bind(doShipLaunch);
         shipLaunch.setStyle("-fx-background-color: transparent;");
 
         next = makeButtonLine(localizedProperty("ShipLaunchScreen.NEXT"));
@@ -386,7 +387,7 @@ public class ShipLaunchScreen extends StackPane {
      * @return Localized text expression binding node
      */
     private static ReadOnlyStringProperty localizedProperty(String key){
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, key);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), key);
     }
 
     /**

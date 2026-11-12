@@ -3,12 +3,12 @@ package ca.dauqui.spacecolonygame.gamedata;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
 
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * Represents an immutable operational demographic profiling tag applied to colony populations.
@@ -29,14 +29,12 @@ public record PopulationTag(
         Set<PopulationTag> incompatibleTags,
         ReadOnlyStringProperty name
 ) implements Localizable, EnumLike {
-    private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/populationtag.properties";
-    private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
     /**
      * Specialized constants loader parsing demographic profiles from disk properties.
      * Reconstructs a bidirectional unmodifiable graph layout mapping social incompatibilities.
      */
-    private static final TypesafeConstants<PopulationTag> tags = new TypesafeConstants<>(CONFIG_PATH) {
+    private static final TypesafeConstants<PopulationTag> tags = new TypesafeConstants<>(GameParameters.StringParam.POPULATION_TAG_DATA_PATH.get()) {
         @Override
         protected void parseProperties(Properties props, Map<String, PopulationTag> targetMap) {
             // Transient memory layer holding onto mutable hash sets during the bidirectional wiring phase
@@ -68,7 +66,7 @@ public record PopulationTag(
          */
         private Result computeIfAbsent(String id, Map<String, PopulationTag> targetMap, Map<PopulationTag, Set<PopulationTag>> incompatibleTagSets){
             PopulationTag tag = targetMap.get(id);
-            Set<PopulationTag> incompatibleTags = null;
+            Set<PopulationTag> incompatibleTags;
             if (tag == null) {
                 // Initializes a transient mutable set that will act beneath the unmodifiable view wrapper
                 incompatibleTags = new HashSet<>();
@@ -120,7 +118,7 @@ public record PopulationTag(
      * @param incompatibleTags The mutable social data set containing tracking restrictions
      */
     private PopulationTag(int ordinal, String id, Set<PopulationTag> incompatibleTags) {
-        this(ordinal, id, Collections.unmodifiableSet(incompatibleTags), Localize.getProperty(ENUMS_BUNDLE, "PopulationTag." + id));
+        this(ordinal, id, Collections.unmodifiableSet(incompatibleTags), Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "PopulationTag." + id));
     }
 
     /**

@@ -3,6 +3,7 @@ package ca.dauqui.spacecolonygame.gamedata;
 import ca.dauqui.spacecolonygame.localization.Localizable;
 import ca.dauqui.spacecolonygame.localization.Localize;
 import ca.dauqui.spacecolonygame.localization.Localized;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import ca.dauqui.spacecolonygame.util.EnumLike;
 import ca.dauqui.spacecolonygame.util.TypesafeConstants;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -33,13 +34,11 @@ public record SatelliteType(
         ReadOnlyStringProperty name
     ) implements Localizable, EnumLike {
     private static final Logger LOG = Logger.getLogger(SatelliteType.class.getName());
-    private static final String CONFIG_PATH = "/ca/dauqui/spacecolonygame/data/satelliteType.properties";
-    private static final String ENUMS_BUNDLE = "ca.dauqui.spacecolonygame.localization.enums";
 
     /**
      * Typesafe central registry loading and isolating structured configuration parameters from disk.
      */
-    private static final TypesafeConstants<SatelliteType> registry = new TypesafeConstants<>(CONFIG_PATH) {
+    private static final TypesafeConstants<SatelliteType> registry = new TypesafeConstants<>(GameParameters.StringParam.SATELLITE_TYPE_DATA_PATH.get()) {
         @Override
         protected void parseProperties(Properties props, Map<String, SatelliteType> targetMap) {
             Set<String> processedPrefixes = new HashSet<>();
@@ -94,7 +93,7 @@ public record SatelliteType(
      * @param effects The raw collection of data modifiers assigned to this profile
      */
     private SatelliteType(int ordinal, String id, Set<ProbeAndSatelliteEffect> effects) {
-        this(ordinal, id, Collections.unmodifiableSet(effects), Localize.getProperty(ENUMS_BUNDLE, "SatelliteType." + id));
+        this(ordinal, id, Collections.unmodifiableSet(effects), Localize.getProperty(GameParameters.StringParam.LOCALIZATION_ENUMS_BUNDLE.get(), "SatelliteType." + id));
     }
 
     /**

@@ -9,6 +9,7 @@ import ca.dauqui.spacecolonygame.gamedata.starsystem.atmosphere.AtmosphereCompos
 import ca.dauqui.spacecolonygame.gui.common.Utility;
 import ca.dauqui.spacecolonygame.gui.newgame.InfoGrid;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
@@ -35,7 +36,6 @@ import java.util.stream.Collectors;
  * @author Jean-François Quintal
  */
 public class ChoosePlanetScreen extends VBox {
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
     private static final double PLANET_VIEW_HEIGHT_MULT = 0.66;
     private static final double INFO_GRID_HEIGHT_MULT = 0.25;
     private static final double BUTTON_BAR_HEIGHT_MULT = 0.08;
@@ -126,7 +126,7 @@ public class ChoosePlanetScreen extends VBox {
 
         Button nextButton = new Button();
         Utility.setButtonStyle(nextButton);
-        nextButton.textProperty().bind(Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "ChoosePlanetScreen.NEXT_BUTTON"));
+        nextButton.textProperty().bind(localizedProperty("ChoosePlanetScreen.NEXT_BUTTON"));
         // Disabled if no destination planet is explicitly highlighted
         nextButton.disableProperty().bind(selectedPlanet.isNull());
         nextButton.setOnAction(nextButtonAction);
@@ -206,7 +206,7 @@ public class ChoosePlanetScreen extends VBox {
         for (ProbeAndSatelliteEffect effect : effects){
             switch (effect){
                 case FORCE_ATMOSPHERIC_REACTIONS->
-                        selectedPlanet.get().getPlanet().atmosphereComposition().forceAtmosphericReactions(5);
+                        selectedPlanet.get().getPlanet().atmosphereComposition().forceAtmosphericReactions(GameParameters.IntParam.IGNITION_PROBE_MAX_CYCLES.get());
                 default -> {
                     // do nothing for tags not used here
                 }
@@ -441,7 +441,7 @@ public class ChoosePlanetScreen extends VBox {
     }
 
     private static ReadOnlyStringProperty localizedProperty(String name) {
-        return Localize.getProperty(LOCALIZATION_BUNDLE_PATH, name);
+        return Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), name);
     }
 
     /**

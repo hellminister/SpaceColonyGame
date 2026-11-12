@@ -2,8 +2,11 @@ package ca.dauqui.spacecolonygame.gui.mainwindow;
 
 import ca.dauqui.spacecolonygame.gamedata.Colony;
 import ca.dauqui.spacecolonygame.gui.newgame.NewGameScene;
+import ca.dauqui.spacecolonygame.gui.settingscreen.SettingsScreen;
 import ca.dauqui.spacecolonygame.gui.startscreen.StartScreen;
 import ca.dauqui.spacecolonygame.localization.Localize;
+import ca.dauqui.spacecolonygame.settings.GameParameters;
+import ca.dauqui.spacecolonygame.settings.GameSettings;
 import javafx.application.Application;
 
 import javafx.stage.Screen;
@@ -17,12 +20,12 @@ import javafx.stage.Stage;
  * @author Jean-François Quintal
  */
 public class MainWindow extends Application {
-    private static final String LOCALIZATION_BUNDLE_PATH = "ca.dauqui.spacecolonygame.localization.gui.gui";
 
     private Stage primaryStage;
 
     private final StartScreen startScreen;
     private final NewGameScene newGameScene;
+    private final SettingsScreen settingsScreen;
 
     private Colony colony;
 
@@ -31,9 +34,10 @@ public class MainWindow extends Application {
      * to support fluid cross-scene communication routines.
      */
     public MainWindow() {
+        GameSettings.init();
         startScreen = new StartScreen(this);
         newGameScene = new NewGameScene(this);
-
+        settingsScreen = new SettingsScreen(this);
     }
 
     /**
@@ -60,11 +64,13 @@ public class MainWindow extends Application {
 
         primaryStage = stage;
 
-        primaryStage.titleProperty().bind(Localize.getProperty(LOCALIZATION_BUNDLE_PATH, "MainWindow.TITLE"));
+        primaryStage.titleProperty().bind(Localize.getProperty(GameParameters.StringParam.LOCALIZATION_GUI_BUNDLE.get(), "MainWindow.TITLE"));
         primaryStage.setMaxWidth(maxScreenWidth);
         primaryStage.setMaxHeight(maxScreenHeight);
         primaryStage.setScene(startScreen);
         primaryStage.setMaximized(true);
+
+        startScreen.setSize(primaryStage.widthProperty(), primaryStage.heightProperty());
 
         primaryStage.show();
     }
@@ -85,6 +91,7 @@ public class MainWindow extends Application {
             // TODO asks and warn about the state of the save and that the current progress might be lost
             // TODO call return if they decide not to continue;
         }
+        GameSettings.resolveNewGameSeed();
         colony = new Colony();
         newGameScene.prepareNewGame();
         newGameScene.setSize(primaryStage.getWidth(), primaryStage.getHeight());
@@ -99,4 +106,8 @@ public class MainWindow extends Application {
         return colony;
     }
 
+    public void switchToSettingScene() {
+        settingsScreen.setSize(primaryStage.getWidth(), primaryStage.getHeight());
+        primaryStage.setScene(settingsScreen);
+    }
 }

@@ -1,5 +1,6 @@
 package ca.dauqui.spacecolonygame.util;
 
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.scene.media.Media;
 
 import java.io.File;
@@ -12,7 +13,7 @@ import java.net.URL;
 public enum VideoLibrary implements AssetLibrary<Media> {
     VIDEO_LIBRARY;
 
-    private final ModdableResourceLoader<Media> loader = new ModdableResourceLoader<>("/ca/dauqui/spacecolonygame/video/") {
+    private final ModdableResourceLoader<Media> loader = new ModdableResourceLoader<>(GameParameters.StringParam.VIDEO_FOLDER_ROOT.get()) {
         @Override
         protected Media loadFromFile(File file) {
             try {

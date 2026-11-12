@@ -1,5 +1,6 @@
 package ca.dauqui.spacecolonygame.util;
 
+import ca.dauqui.spacecolonygame.settings.GameParameters;
 import javafx.scene.image.Image;
 
 import java.io.BufferedInputStream;
@@ -15,7 +16,7 @@ import java.net.URL;
 public enum ImageLibrary implements AssetLibrary<Image> {
     IMAGE_LIBRARY;
 
-    private final ModdableResourceLoader<Image> loader = new ModdableResourceLoader<>("/ca/dauqui/spacecolonygame/images/") {
+    private final ModdableResourceLoader<Image> loader = new ModdableResourceLoader<>(GameParameters.StringParam.IMAGES_FOLDER_ROOT.get()) {
         @Override
         protected Image loadFromFile(File file) {
             try (InputStream fis = new FileInputStream(file);

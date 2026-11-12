@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
  * @author Jean-François Quintal
  */
 public class Colony {
-
-
     private final StringProperty colonyName;
     private final StringProperty commanderName;
     private final StringProperty aiName;
